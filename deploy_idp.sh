@@ -1,39 +1,67 @@
-#!/bin/sh
+#!/bin/sh -x
 # UTF-8
 HELP="
 ##############################################################################
-# Shibboleth deployment script by Anders Lördal                              #
-# Högskolan i Gävle and SWAMID                                               #
+#	Federated Identity Appliance Deployer 				     #
 #                                                                            #
-# Version 2.0                                                                #
+# This script deploys a complete SAML IdP infrastructure and		     #
+# in the case of CAF, an eduroam FreeRADIUS server			     #
 #                                                                            #
+# Supported Federations:						     # 
+#		SWAMID  -  on Ubuntu (original script)	    	             #
+#		CAF - (Canadian Access Federation) on CentOS		     #
+#                                                                            #
+# You can pre-set configuration values in the file 'config'                  #
+# usage: deploy_idp.sh [-c|-k|-w]                                            #
+# 	To disable the whiptail gui run with argument '-c'                   # 
+# 	To keep generated files run with argument '-k'                       #
+# 	To wipe out the entire install (NO BACKUP, run with arguement -w     #
+#    NOTE! some of these files WILL contain cleartext passwords.             #
+#                                                                            #
+##############################################################################
+# Deployment Profiles:  SWAMID, CAF                                          #
+#                                                                            #
+# ___ SWAMID:                                                                #
 # Deploys a working IDP for SWAMID on an Ubuntu system                       #
 # Uses: jboss-as-distribution-6.1.0.Final or tomcat6                         #
 #       shibboleth-identityprovider-2.4.0                                    #
 #       cas-client-3.2.1-release                                             #
 #       mysql-connector-java-5.1.24 (for EPTID)                              #
 #                                                                            #
+# Originators of this deployment script by Anders Lördal                     #
+# Högskolan i Gävle and SWAMID                                               #
+# Please send SWAMID questions and improvements to: anders.lordal@hig.se     # 
+#                                                                            #
+# ___ Canadian Access Federation (CAF):                                      #
+# Deploys a working IDP for CAF  on an CentOS system                         #
+# Uses:                                                                      #
+#	Java: 			java-1.6.0-openjdk-devel		     #
+#	Servlet Container: 	tomcat6  				     #
+#       IDP Software: 		shibboleth-identityprovider-2.4.0            #
+#       mysql-connector-java-5.1.24 (for EPTID)                              #
+#                                                                            #
+#                                                                            #
+#       RADIUS Software: 	shibboleth-identityprovider-2.4.0            #
+# Please send CAF questions and improvements to: tickets@canarie.ca  	     #
+#                                                                            #
+# Notes 	                                                             #
 # Templates are provided for CAS and LDAP authentication                     #
-#                                                                            #
-# To disable the whiptail gui run with argument '-c'                         #
-# To keep generated files run with argument '-k'                             #
-#    NOTE! some of theese files WILL contain cleartext passwords.            #
-#                                                                            #
 # To add a new template for another authentication, just add a new directory #
 # under the 'prep' directory, add the neccesary .diff files and add any      #
 # special hanlding of those files to the script.                             #
 #                                                                            #
 # You can pre-set configuration values in the file 'config'                  #
 #                                                                            #
-# Please send questions and improvements to: anders.lordal@hig.se            #
 ##############################################################################
 "
 mdSignerFinger="12:60:D7:09:6A:D9:C1:43:AD:31:88:14:3C:A8:C4:B7:33:8A:4F:CB"
 
 # Set cleanUp to 0 (zero) for debugging of created files
-cleanUp=1
+cleanUp=0
 # Default enable of whiptail UI
 GUIen=y
+GUIbacktitle="Federated Identity Appliance Deployer"
+
 # Version of shibboleth IDP
 shibVer="2.4.0"
 
@@ -75,113 +103,7 @@ distCmd5=""
 fetchCmd="curl --silent -k --output"
 shibbURL="http://shibboleth.net/downloads/identity-provider/${shibVer}/shibboleth-identityprovider-${shibVer}-bin.zip"
 casClientURL="http://downloads.jasig.org/cas-clients/cas-client-3.2.1-release.zip"
-
-if [ ! -x "${whiptailBin}" ]
-then
-	GUIen="n"
-fi
-
-# parse options
-options=$(getopt -o ckh -l "help" -- "$@")
-eval set -- "${options}"
-while [ $# -gt 0 ]
-do
-	case "$1" in
-		-c)
-			GUIen="n"
-		;;
-		-k)
-			cleanUp="0"
-		;;
-		-h | --help)
-			printf "%s\n" "${HELP}"
-			exit
-		;;
-	esac
-	shift
-done
-
-# guess linux dist
-lsbBin=`which lsb_release`
-if [ -x "${lsbBin}" ]
-then
-	dist=`lsb_release -i 2>/dev/null |cut -d':' -f2 | perl -npe 's/^\s+//g'`
-	if [ ! -z "`echo ${dist} |grep -i 'ubuntu' |grep -v 'grep'`" ]
-	then
-		dist="ubuntu"
-	elif [ ! -z "`echo ${dist} |grep -i 'redhat' |grep -v 'grep'`" ]
-	then
-		dist="redhat"
-	fi
-else
-	if [ -s "/etc/centos-release" -o -s "/etc/redhat-release" ]
-	then
-		dist="redhat"
-	fi
-fi
-
-# define commands
-ubuntuCmdU="apt-get -qq update"
-ubuntuCmd1="apt-get -y install patch unzip curl >> ${statusFile} 2>&1"
-ubuntuCmd2="apt-get -y install git-core maven2 openjdk-6-jdk >> ${statusFile} 2>&1"
-ubuntuCmd3="apt-get -y install default-jre >> ${statusFile} 2>&1"
-ubuntuCmd4="apt-get -y install tomcat6 >> ${statusFile} 2>&1"
-ubuntuCmd5="apt-get -y install mysql-server >> ${statusFile} 2>&1"
-redhatCmdU="yum -q -y update"
-redhatCmd1="yum -y install patch unzip curl"
-redhatCmd2="yum -y install git-core"
-redhatCmd3=""
-redhatCmd4=""
-redhatCmd5="yum -y install mysql-server"
-
-if [ ${dist} = "ubuntu" ]
-then
-	distCmdU=${ubuntuCmdU}
-	distCmd1=${ubuntuCmd1}
-	distCmd2=${ubuntuCmd2}
-	distCmd3=${ubuntuCmd3}
-	distCmd4=${ubuntuCmd4}
-	distCmd5=${ubuntuCmd5}
-elif [ ${dist} -eq "redhat" ]
-then
-	Rmsg="Red Hat and CentOS ship with the GNU Java compiler and VM by default. These are not usable with Shibboleth so you must install another JVM. The Sun HotSpot VM is the most commonly used. On recent versions of these distros, you can also install a compatible version of OpenJDK 1.6 using yum. To find the appropriate package name, run yum makecache && yum search openjdk. You will also need to ensure that Tomcat is using OpenJDK rather than the GNU tools."
-	if [ "${GUIen}" = "y" ]
-	then
-		${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Redhat/Centos" --defaultno --yesno --clear -- \
-			"$Rmsg" ${whipSize} 3>&1 1>&2 2>&3
-		continueFNum=$?
-		continueF="n"
-		if [ "${continueFNum}" -eq 0 ]
-		then
-			continueF="y"
-		fi
-	else
-		echo $Rmsg
-		echo "Make sure Maven2 is installed! Continue script [ y | N ]?"
-		read continueF
-		echo ""
-	fi
-
-	if [ "${continueF}" != "y" ]
-	then
-		cleanBadInstall
-		exit
-	fi
-
-	distCmdU=${redhatCmdU}
-	distCmd1=${redhatCmd1}
-	distCmd2=${redhatCmd2}
-	distCmd3=${redhatCmd3}
-	distCmd4=${redhatCmd4}
-	distCmd5=${redhatCmd5}
-fi
-
-if [ "${USERNAME}" != "root" ]
-then
-	echo "Run as root!"
-	exit
-fi
-
+##### FUNCTIONS #####
 # cleanup function
 cleanBadInstall() {
 	if [ -d "/opt/shibboleth-identityprovider" ]
@@ -239,6 +161,130 @@ setJavaHome () {
 	fi
 }
 
+
+
+#### END FUNCTIONS ####
+
+if [ ! -x "${whiptailBin}" ]
+then
+	GUIen="n"
+fi
+# parse options
+options=$(getopt -o ckwh -l "help" -- "$@")
+eval set -- "${options}"
+while [ $# -gt 0 ]
+do
+	case "$1" in
+
+		-w)
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "CLEAN OUT INSTALLATION" --defaultno --yesno --clear -- \
+                        "Only clean entire install from machine? Both options exit immediately, yes will wipe before exit" ${whipSize} 3>&1 1>&2 2>&3
+                	continueFwipe=$?
+                	if [ "${continueFwipe}" -eq 0 ]
+                	then
+				cleanBadInstall
+				echo "Install cleaned up"
+                	fi
+				exit
+		;;
+		-c)
+			GUIen="n"
+		;;
+		-k)
+			cleanUp="0"
+		;;
+		-h | --help)
+			printf "%s\n" "${HELP}"
+			exit
+		;;
+	esac
+	shift
+done
+# guess linux dist
+lsbBin=`which lsb_release`
+if [ -x "${lsbBin}" ]
+then
+	dist=`lsb_release -i 2>/dev/null |cut -d':' -f2 | perl -npe 's/^\s+//g'`
+	if [ ! -z "`echo ${dist} |grep -i 'ubuntu' |grep -v 'grep'`" ]
+	then
+		dist="ubuntu"
+	elif [ ! -z "`echo ${dist} |grep -i 'redhat' |grep -v 'grep'`" ]
+	then
+		dist="redhat"
+	fi
+else
+	if [ -s "/etc/centos-release" -o -s "/etc/redhat-release" ]
+	then
+		dist="redhat"
+	fi
+fi
+
+
+
+# define commands
+ubuntuCmdU="apt-get -qq update"
+ubuntuCmd1="apt-get -y install patch unzip curl >> ${statusFile} 2>&1"
+ubuntuCmd2="apt-get -y install git-core maven2 openjdk-6-jdk >> ${statusFile} 2>&1"
+ubuntuCmd3="apt-get -y install default-jre >> ${statusFile} 2>&1"
+ubuntuCmd4="apt-get -y install tomcat6 >> ${statusFile} 2>&1"
+ubuntuCmd5="apt-get -y install mysql-server >> ${statusFile} 2>&1"
+redhatCmdU="yum -q -y update"
+redhatCmd1="yum -y install patch unzip curl"
+redhatCmd2="yum -y install git-core"
+redhatCmd3=""
+redhatCmd4=""
+redhatCmd5="yum -y install mysql-server"
+# added to grab appropriate running user
+runningAs=`/usr/bin/whoami`
+#
+if [ ${dist} = "ubuntu" ]
+then
+	distCmdU=${ubuntuCmdU}
+	distCmd1=${ubuntuCmd1}
+	distCmd2=${ubuntuCmd2}
+	distCmd3=${ubuntuCmd3}
+	distCmd4=${ubuntuCmd4}
+	distCmd5=${ubuntuCmd5}
+elif [ ${dist} -eq "redhat" ]
+then
+	Rmsg="Red Hat and CentOS ship with the GNU Java compiler and VM by default. These are not usable with Shibboleth so you must install another JVM. The Sun HotSpot VM is the most commonly used. On recent versions of these distros, you can also install a compatible version of OpenJDK 1.6 using yum. To find the appropriate package name, run yum makecache && yum search openjdk. You will also need to ensure that Tomcat is using OpenJDK rather than the GNU tools."
+	if [ "${GUIen}" = "y" ]
+	then
+		${whiptailBin} --backtitle "${GUIbacktitle}" --title "Redhat/Centos" --defaultno --yesno --clear -- \
+			"$Rmsg" ${whipSize} 3>&1 1>&2 2>&3
+		continueFNum=$?
+		continueF="n"
+		if [ "${continueFNum}" -eq 0 ]
+		then
+			continueF="y"
+		fi
+	else
+		echo $Rmsg
+		echo "Make sure Maven2 is installed! Continue script [ y | N ]?"
+		read continueF
+		echo ""
+	fi
+
+	if [ "${continueF}" != "y" ]
+	then
+		cleanBadInstall
+		exit
+	fi
+
+	distCmdU=${redhatCmdU}
+	distCmd1=${redhatCmd1}
+	distCmd2=${redhatCmd2}
+	distCmd3=${redhatCmd3}
+	distCmd4=${redhatCmd4}
+	distCmd5=${redhatCmd5}
+fi
+
+if [ "${runningAs}" != "root" ]
+then
+	echo "Run as root!"
+	exit
+fi
+
 # read config file
 if [ -f "${Spath}/config" ]
 then
@@ -259,7 +305,7 @@ then
 	then
 		if [ "${GUIen}" = "y" ]
 		then
-			appserv=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Application server" --nocancel --menu --clear  -- "Which application server do you want to use?" ${whipSize} 2 \
+			appserv=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Application server" --nocancel --menu --clear  -- "Which application server do you want to use?" ${whipSize} 2 \
 				tomcat "Apache Tomcat 6" jboss "Jboss Application server 6" 3>&1 1>&2 2>&3)
 		else
 			echo "Application server [ tomcat | jboss ]"
@@ -272,7 +318,7 @@ then
 	then
 		if [ "${GUIen}" = "y" ]
 		then
-			tList="${whiptailBin} --backtitle \"SWAMID IDP Deployer\" --title \"Authentication type\" --nocancel --menu --clear -- \"Which authentication type do you want to use?\" ${whipSize} 2"
+			tList="${whiptailBin} --backtitle \"${GUIbacktitle}\" --title \"Authentication type\" --nocancel --menu --clear -- \"Which authentication type do you want to use?\" ${whipSize} 2"
 			for i in `ls ${Spath}/prep | perl -npe 's/\n/\ /g'`
 			do
 				tDesc=`cat ${Spath}/prep/${i}/.desc`
@@ -291,7 +337,7 @@ then
 	then
 		if [ "${GUIen}" = "y" ]
 		then
-			${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Attributes to Google" --yesno --clear -- \
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Attributes to Google" --yesno --clear -- \
 				"Do you want to release attributes to google?\n\nSwamid, Swamid-test and testshib.org installed as standard" ${whipSize} 3>&1 1>&2 2>&3
 			googleNum=$?
 			google="n"
@@ -310,7 +356,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			googleDom=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Your Google domain name" --nocancel --inputbox --clear -- \
+			googleDom=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Your Google domain name" --nocancel --inputbox --clear -- \
 				"Please input your Google domain name (student.xxx.yy)." ${whipSize} "student.${Dname}" 3>&1 1>&2 2>&3)
 		else
 			echo "Your Google domain name: (student.xxx.yy)"
@@ -323,7 +369,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			ntpserver=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "NTP server" --nocancel --inputbox --clear -- \
+			ntpserver=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "NTP server" --nocancel --inputbox --clear -- \
 				"Please input your NTP server address." ${whipSize} "ntp.${Dname}" 3>&1 1>&2 2>&3)
 		else
 			echo "Specify NTP server:"
@@ -336,7 +382,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			ldapserver=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "LDAP server" --nocancel --inputbox --clear -- \
+			ldapserver=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "LDAP server" --nocancel --inputbox --clear -- \
 				"Please input yout LDAP server(s) (ldap.xxx.yy).\n\nSeparate multiple servers with spaces.\nLDAPS is used by default." ${whipSize} "ldap.${Dname}" 3>&1 1>&2 2>&3)
 		else
 			echo "Specify LDAP URL: (ldap.xxx.yy) (seperate servers with space). LDAPS is used by default."
@@ -349,7 +395,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			ldapbasedn=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "LDAP Base DN" --nocancel --inputbox --clear -- \
+			ldapbasedn=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "LDAP Base DN" --nocancel --inputbox --clear -- \
 				"Please input your LDAP Base DN" ${whipSize} 3>&1 1>&2 2>&3)
 		else
 			echo "Specify LDAP Base DN:"
@@ -362,7 +408,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			ldapbinddn=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "LDAP Bind DN" --nocancel --inputbox --clear -- \
+			ldapbinddn=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "LDAP Bind DN" --nocancel --inputbox --clear -- \
 				"Please input your LDAP Bind DN" ${whipSize} 3>&1 1>&2 2>&3)
 		else
 			echo "Specify LDAP Bind DN:"
@@ -375,7 +421,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			ldappass=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "LDAP Password" --nocancel --passwordbox --clear -- \
+			ldappass=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "LDAP Password" --nocancel --passwordbox --clear -- \
 				"Please input your LDAP Password:" ${whipSize} 3>&1 1>&2 2>&3)
 		else
 			echo "Specify LDAP Password:"
@@ -388,7 +434,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "LDAP Subsearch" --nocancel --yesno --clear -- \
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "LDAP Subsearch" --nocancel --yesno --clear -- \
 				"Do you want to enable LDAP subtree search?" ${whipSize} 3>&1 1>&2 2>&3
 			subsearchNum=$?
 			subsearch="false"
@@ -407,7 +453,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			ninc=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "norEduPersonNIN" --nocancel --inputbox --clear -- \
+			ninc=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "norEduPersonNIN" --nocancel --inputbox --clear -- \
 				"Please specify LDAP attribute for norEduPersonNIN (YYYYMMDDnnnn)." ${whipSize} "norEduPersonNIN" 3>&1 1>&2 2>&3)
 		else
 			echo "LDAP attribute for norEduPersonNIN (YYYYMMDDnnnn)? (empty string for 'norEduPersonNIN')"
@@ -424,7 +470,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			idpurl=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "IDP URL" --nocancel --inputbox --clear -- \
+			idpurl=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "IDP URL" --nocancel --inputbox --clear -- \
 				"Please input the URL to this IDP (https://idp.xxx.yy)." ${whipSize} "https://${FQDN}" 3>&1 1>&2 2>&3)
 		else
 			echo "Specify IDP URL: (https://idp.xxx.yy)"
@@ -439,7 +485,7 @@ then
 		do
 			if [ "${GUIen}" = "y" ]
 			then
-				casurl=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "" --nocancel --inputbox --clear -- \
+				casurl=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "" --nocancel --inputbox --clear -- \
 					"Please input the URL to yourCAS server (https://cas.xxx.yy/cas)." ${whipSize} "https://cas.${Dname}/cas" 3>&1 1>&2 2>&3)
 			else
 				echo "Specify CAS URL server: (https://cas.xxx.yy/cas)"
@@ -452,7 +498,7 @@ then
 		do
 			if [ "${GUIen}" = "y" ]
 			then
-				caslogurl=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "" --nocancel --inputbox --clear -- \
+				caslogurl=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "" --nocancel --inputbox --clear -- \
 					"Please input the Login URL to your CAS server (https://cas.xxx.yy/cas/login)." ${whipSize} "${casurl}/login" 3>&1 1>&2 2>&3)
 			else
 				echo "Specify CAS Login URL server: (https://cas.xxx.yy/cas/login)"
@@ -466,7 +512,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			certOrg=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Certificate organisation" --nocancel --inputbox --clear -- \
+			certOrg=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Certificate organisation" --nocancel --inputbox --clear -- \
 				"Please input organisation name string for certificate request" ${whipSize} 3>&1 1>&2 2>&3)
 		else
 			echo "Organisation name string for certificate request:"
@@ -479,7 +525,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			certC=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Certificate country" --nocancel --inputbox --clear -- \
+			certC=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Certificate country" --nocancel --inputbox --clear -- \
 				"Please input country string for certificate request." ${whipSize} 'SE' 3>&1 1>&2 2>&3)
 		else
 			echo "Country string for certificate request: (empty string for 'SE')"
@@ -502,7 +548,7 @@ then
 		done
 		if [ "${GUIen}" = "y" ]
 		then
-			certAcro=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Organisation acronym" --nocancel --inputbox --clear -- \
+			certAcro=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Organisation acronym" --nocancel --inputbox --clear -- \
 				"Please input organisation Acronym (eg. 'HiG')" ${whipSize} "${acro}" 3>&1 1>&2 2>&3)
 		else
 			echo "norEduOrgAcronym: (eg. 'HiG')"
@@ -515,7 +561,7 @@ then
 	do
 		if [ "${GUIen}" = "y" ]
 		then
-			certLongC=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Country descriptor" --nocancel --inputbox --clear -- \
+			certLongC=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Country descriptor" --nocancel --inputbox --clear -- \
 				"Please input country descriptor (eg. 'Sweden')" ${whipSize} 'Sweden' 3>&1 1>&2 2>&3)
 		else
 			echo "Country descriptor (eg. 'Sweden')"
@@ -528,7 +574,7 @@ then
 	then
 		if [ "${GUIen}" = "y" ]
 		then
-			${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Send anonymous data" --yesno --clear -- \
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Send anonymous data" --yesno --clear -- \
 				"Do you want to send anonymous usage data to SWAMID?\nThis is recommended." ${whipSize} 3>&1 1>&2 2>&3
 			fticsNum=$?
 			fticks="n"
@@ -546,7 +592,7 @@ then
 	then
 		if [ "${GUIen}" = "y" ]
 		then
-			${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Maven2" --defaultno --yesno --clear -- \
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Maven2" --defaultno --yesno --clear -- \
 				"Make sure Maven2 is installed?\nContinue?" ${whipSize} 3>&1 1>&2 2>&3
 			continueFNum=$?
 			continueF="n"
@@ -571,7 +617,7 @@ then
 	then
 		if [ "${GUIen}" = "y" ]
 		then
-			${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "eduPersonTargetedID" --yesno --clear -- \
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduPersonTargetedID" --yesno --clear -- \
 				"Do you want to install support for eduPersonTargetedID?\nThis is recommended." ${whipSize} 3>&1 1>&2 2>&3
 			eptidNum=$?
 			eptid="n"
@@ -590,7 +636,7 @@ then
 	then
 		if [ "${GUIen}" = "y" ]
 		then
-			mysqlPass=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "MySQL password" --nocancel --passwordbox --clear -- \
+			mysqlPass=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "MySQL password" --nocancel --passwordbox --clear -- \
 				"Please input the root password for MySQL\n\nEmpty string generates new password." ${whipSize} 3>&1 1>&2 2>&3)
 		else
 			echo "Root password for MySQL (empty string generates new password)?"
@@ -603,7 +649,7 @@ then
 	then
 		if [ "${GUIen}" = "y" ]
 		then
-			${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Self signed certificate" --defaultno --yesno --clear -- \
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Self signed certificate" --defaultno --yesno --clear -- \
 				"Create a self signed certificate for HTTPS?\n\nThis is NOT recommended! Only for testing purposes" ${whipSize} 3>&1 1>&2 2>&3
 			selfsignedNum=$?
 			selfsigned="n"
@@ -620,9 +666,9 @@ then
 
 	if [ "${GUIen}" = "y" ]
 	then
-		pass=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "IDP keystore password" --nocancel --passwordbox --clear -- \
+		pass=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "IDP keystore password" --nocancel --passwordbox --clear -- \
 			"Please input your IDP keystore password\n\nEmpty string generates new password." ${whipSize} 3>&1 1>&2 2>&3)
-		httpspass=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "HTTPS Keystore password" --nocancel --passwordbox --clear -- \
+		httpspass=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "HTTPS Keystore password" --nocancel --passwordbox --clear -- \
 			"Please input your Keystore password for HTTPS\n\nEmpty string generates new password." ${whipSize} 3>&1 1>&2 2>&3)
 	else
 		echo "IDP keystore password (empty string generates new password)"
@@ -670,7 +716,7 @@ EOM
 	cRet="1"
 	if [ "${GUIen}" = "y" ]
 	then
-		${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Save config" --clear --yesno -- "Do you want to save theese config values?\n\nIf you save theese values the current config file will be ovverwritten.\n NOTE: No passwords will be saved." ${whipSize} 3>&1 1>&2 2>&3
+		${whiptailBin} --backtitle "${GUIbacktitle}" --title "Save config" --clear --yesno -- "Do you want to save theese config values?\n\nIf you save theese values the current config file will be ovverwritten.\n NOTE: No passwords will be saved." ${whipSize} 3>&1 1>&2 2>&3
 		cRet=$?
 	else
 		cat ${Spath}/files/confirm.tx
@@ -712,8 +758,8 @@ EOM
 	cRet="1"
 	if [ "${GUIen}" = "y" ]
 	then
-		${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Confirm" --scrolltext --clear --textbox ${Spath}/files/confirm.tx 20 75 3>&1 1>&2 2>&3
-		${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Confirm" --clear --yesno --defaultno -- "Do you want to install this IDP with theese options?" ${whipSize} 3>&1 1>&2 2>&3
+		${whiptailBin} --backtitle "${GUIbacktitle}" --title "Confirm" --scrolltext --clear --textbox ${Spath}/files/confirm.tx 20 75 3>&1 1>&2 2>&3
+		${whiptailBin} --backtitle "${GUIbacktitle}" --title "Confirm" --clear --yesno --defaultno -- "Do you want to install this IDP with theese options?" ${whipSize} 3>&1 1>&2 2>&3
 		cRet=$?
 	else
 		cat ${Spath}/files/confirm.tx
@@ -766,7 +812,7 @@ then
 		do
 			if [ "${GUIen}" = "y" ]
 			then
-				idpurl=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "IDP URL" --nocancel --inputbox --clear -- \
+				idpurl=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "IDP URL" --nocancel --inputbox --clear -- \
 				"Please input the URL to this IDP (https://idp.xxx.yy)." ${whipSize} "https://${FQDN}" 3>&1 1>&2 2>&3)
 			else
 				echo "Specify IDP URL: (https://idp.xxx.yy)"
@@ -779,7 +825,7 @@ then
 		do
 			if [ "${GUIen}" = "y" ]
 			then
-				casurl=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "" --nocancel --inputbox --clear -- \
+				casurl=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "" --nocancel --inputbox --clear -- \
 					"Please input the URL to yourCAS server (https://cas.xxx.yy/cas)." ${whipSize} "https://cas.${Dname}/cas" 3>&1 1>&2 2>&3)
 			else
 				echo "Specify CAS URL server: (https://cas.xxx.yy/cas)"
@@ -792,7 +838,7 @@ then
 		do
 			if [ "${GUIen}" = "y" ]
 			then
-				caslogurl=$(${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "" --nocancel --inputbox --clear -- \
+				caslogurl=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "" --nocancel --inputbox --clear -- \
 					"Please input the Login URL to your CAS server (https://cas.xxx.yy/cas/login)." ${whipSize} "${casurl}/login" 3>&1 1>&2 2>&3)
 			else
 				echo "Specify CAS Login URL server: (https://cas.xxx.yy/cas/login)"
@@ -827,7 +873,7 @@ then
 		fi
 		cp /opt/ndn-shib-fticks/target/*.jar /opt/shibboleth-identityprovider/lib
 	else
-		${whiptailBin} --backtitle "SWAMID IDP Deployer" --title "Send anonymous data" --yesno --clear -- \
+		${whiptailBin} --backtitle "${GUIbacktitle}" --title "Send anonymous data" --yesno --clear -- \
 			"Do you want to send anonymous usage data to SWAMID?\nThis is recommended." ${whipSize} 3>&1 1>&2 2>&3
 		fticsNum=$?
 		fticks="n"
