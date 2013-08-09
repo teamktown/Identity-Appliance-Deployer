@@ -12,10 +12,11 @@ HELP="
 #		CAF - (Canadian Access Federation) on CentOS		     #
 #                                                                            #
 # You can pre-set configuration values in the file 'config'                  #
-# usage: deploy_idp.sh [-c|-k|-w]                                            #
+# usage: deploy_idp.sh [-c|-k|-w|-e]                                         #
 # 	To disable the whiptail gui run with argument '-c'                   # 
 # 	To keep generated files run with argument '-k'                       #
 # 	To wipe out the entire install (NO BACKUP, run with arguement -w     #
+# 	To install eduroam base install run with arguement '-e'              #
 #    NOTE! some of these files WILL contain cleartext passwords.             #
 #                                                                            #
 ##############################################################################
@@ -41,7 +42,8 @@ HELP="
 #       mysql-connector-java-5.1.24 (for EPTID)                              #
 #                                                                            #
 #                                                                            #
-#       RADIUS Software: 	shibboleth-identityprovider-2.4.0            #
+#       RADIUS Software: 	freeRADIUS 2.1.12 and related 	             #
+#       Connectivity to AD: 	samba & related utilities 		     #
 # Please send CAF questions and improvements to: tickets@canarie.ca  	     #
 #                                                                            #
 # Notes 	                                                             #
@@ -165,20 +167,34 @@ setJavaHome () {
 
 #### END FUNCTIONS ####
 
+redhatCmdEduroam="yum -y install ntp samba samba-winbind freeradius freeradius-krb5 freeradius-ldap freeradius-perl freeradius-python freeradius-utils freeradius-mysql" 
+
+#### END FETCHING COMMANDS ####
 if [ ! -x "${whiptailBin}" ]
 then
 	GUIen="n"
 fi
 # parse options
-options=$(getopt -o ckwh -l "help" -- "$@")
+options=$(getopt -o eckwh -l "help" -- "$@")
 eval set -- "${options}"
 while [ $# -gt 0 ]
 do
 	case "$1" in
 
+		-e)
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy eduroam software base" --defaultno --yesno --clear -- \
+                        "Run yum update to refresh machine to CAF eduroam base?\n\n Yes will proceed with yum silent update and then exit" ${whipSize} 3>&1 1>&2 2>&3
+                	continueFwipe=$?
+                	if [ "${continueFwipe}" -eq 0 ]
+                	then
+				eval ${redhatCmdEduroam}	
+				echo ""
+                	fi
+				exit
+		;;
 		-w)
 			${whiptailBin} --backtitle "${GUIbacktitle}" --title "CLEAN OUT INSTALLATION" --defaultno --yesno --clear -- \
-                        "Only clean entire install from machine? Both options exit immediately, yes will wipe before exit" ${whipSize} 3>&1 1>&2 2>&3
+                        "Wipe entire install from machine, with no backup?\n\n Both options exit immediately, yes will proceed with wipe" ${whipSize} 3>&1 1>&2 2>&3
                 	continueFwipe=$?
                 	if [ "${continueFwipe}" -eq 0 ]
                 	then
@@ -229,11 +245,12 @@ ubuntuCmd3="apt-get -y install default-jre >> ${statusFile} 2>&1"
 ubuntuCmd4="apt-get -y install tomcat6 >> ${statusFile} 2>&1"
 ubuntuCmd5="apt-get -y install mysql-server >> ${statusFile} 2>&1"
 redhatCmdU="yum -q -y update"
-redhatCmd1="yum -y install patch unzip curl"
+redhatCmd1="yum -y install patch zip unzip curl"
 redhatCmd2="yum -y install git-core"
 redhatCmd3=""
 redhatCmd4=""
 redhatCmd5="yum -y install mysql-server"
+redhatCmdEduroam="yum -y install ntp samba samba-winbind freeradius freeradius-krb5 freeradius-ldap freeradius-perl freeradius-python freeradius-utils freeradius-mysql" 
 # added to grab appropriate running user
 runningAs=`/usr/bin/whoami`
 #
