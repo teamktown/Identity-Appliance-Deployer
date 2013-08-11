@@ -19,3 +19,48 @@ selfsigned=""	# Auto create a self seigned https certificate [ y | n ]
 ninc=""		# LDAP attribute for norEduPersonNIN (YYYYMMDDnnnn)
 certAcro=""	# norEduOrgAcronym (eg. "HiG")
 certLongC=""	# Country descriptor (eg. "Sweden")
+#
+#
+# variable					# substitution string in template
+krb5_libdef_default_realm= "" 			# kRb5_LiBdEf_DeFaUlT_ReAlM  DOMAIN.LOCAL
+krb5_realms_def_dom = "" 			#kRb5_rEaLmS_dEf_DoM	domain.local
+krb5_domain_realm = ""				#kRb5_DoMaIn_ReAlM	domain.ca
+smb_workgroup= ""			#sMb_WoRkGrOuP		DOMAIN
+smb_netbios_name=""			#sMb_NeTbIoS_NaMe	APP1
+smb_passwd_svr=""			#sMb_PaSsWd_SvR		IP of AD domain controller
+smb_realm="${krb5_libdef_default_realm}" 	#sMb_ReAlM		realm
+#
+#
+# RADIUS config variables & relevant file
+#
+# raddb/radius.conf   	- overall config 
+freeRADIUS_realm="${krb5_libdef_default_realm}"	#fReErAdIuS_rEaLm
+
+# raddb/client.conf   	- clients that can talk to this radius server
+
+freeRADIUS_cdn_prod_passphrase="" 		# PrOd_EduRoAm_PhRaSe #used in clients.conf, proxy.conf
+freeRADIUS_clcfg_ap1_ip=""			# CLCFG_YaP1_iP 	1.2.3.4
+freeRADIUS_clcfg_ap1_secret=""			# CLCFG_YaP1_sEcReT
+freeRADIUS_clcfg_ap2_ip=""			# CLCFG_YaP2_iP 	4.3.2.1 null route in your ip space if not needed
+freeRADIUS_clcfg_ap2_secret=""			# CLCFG_YaP2_sEcReT
+
+# raddb/proxy.conf 	- Federation Level Radius (FLR) radius servers we talk to
+
+freeRADIUS_pxycfg_realm="${krb5_domain_realm}"  # PXYCFG_rEaLm   #the proxying domain
+
+# raddb/certs/ca.cnf	- Self Signed Certificate Authority settings for bootstrap process
+
+# note that the templates have 10 year validity for the CA and the server certificate
+freeRADIUS_ca_State=""				# CRT_Ca_StAtE  # Ontario 
+freeRADIUS_ca_local=""				# CRT_Ca_LoCaL  # Ottawa
+freeRADIUS_ca_org_name=""			# CRT_Ca_OrGnAmE # Domain Inc.
+freeRADIUS_ca_email=""				# CRT_Ca_EmAiL   # itsupport@domain.ca
+freeRADIUS_ca_commonName=""			# CRT_Ca_CoMmOnNaMe # "SelfSigned domain.ca CA Authority"
+
+# raddb/certs/server.cnf	- Server Certificate settings for bootstrap process
+
+freeRADIUS_svr_State=""				# CRT_SvR_StAtE  # Ontario 
+freeRADIUS_svr_local=""				# CRT_SvR_LoCaL  # Ottawa
+freeRADIUS_svr_org_name=""			# CRT_SvR_OrGnAmE # Domain Inc.
+freeRADIUS_svr_email=""				# CRT_SvR_EmAiL   # itsupport@domain.ca
+freeRADIUS_svr_commonName=""			# CRT_SvR_CoMmOnNaMe # testidp.domain.ca
