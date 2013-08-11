@@ -163,8 +163,65 @@ setJavaHome () {
 	fi
 }
 
+installStateStatusString=""
+installStateFSSO=0
+installStateEduroam=0
+
+setInstallStatus() {
 
 
+# check for installed IDP
+msg_FSSO="Federated SSO/Shibboleth:"
+msg_RADIUS="eduroam read FreeRADIUS:"
+
+if [ -L "/opt/shibboleth-identityprovider" -a -d "/opt/shibboleth-idp" ]
+then
+        msg_fsso_stat="Installed"
+	installStateFSSO=1
+else
+	msg_fsso_stat="Not Found"
+	installStateFSSO=0
+fi
+
+if [ -L "/etc/raddb/sites-enabled/eduroam-inner-tunnel" -a -d "/etc/raddb" ]
+then
+        msg_freeradius_stat="Installed"
+	installStateEduroam=1
+else
+        msg_freeradius_stat="Not Found"
+	installStateEduroam=0
+fi
+getStatusString="System state:\n${msg_FSSO} ${msg_fsso_stat}\n${msg_RADIUS} ${msg_freeradius_stat}"
+
+}
+
+doEduroamInstall() {
+			
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy eduroam software base" --defaultno --yesno --clear -- \
+                        "Run yum update to refresh machine to CAF eduroam base?\n\n Yes will proceed with yum silent update and then exit" ${whipSize} 3>&1 1>&2 2>&3
+                	continueFwipe=$?
+                	if [ "${continueFwipe}" -eq 0 ]
+                	then
+				eval ${redhatCmdEduroam}	
+				echo ""
+                	fi
+
+}
+
+displayMainMenu() {
+
+                if [ "${GUIen}" = "y" ]
+                then
+                        eduroam-task=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --menu --clear  -- "${getStatusString}\nWhich do you want to do?" ${whipSize} 2 \
+                                install "Install eduroam" uninstall "Remove eduroam" 3>&1 1>&2 2>&3)
+                else
+                        echo "eduroam tasks[ install| uninstall ]"
+                        read eduroam-task 
+                        echo ""
+                fi
+
+
+}
 #### END FUNCTIONS ####
 
 redhatCmdEduroam="yum -y install ntp samba samba-winbind freeradius freeradius-krb5 freeradius-ldap freeradius-perl freeradius-python freeradius-utils freeradius-mysql" 
@@ -176,20 +233,19 @@ then
 fi
 # parse options
 options=$(getopt -o eckwh -l "help" -- "$@")
+
+setInstallStatus
+displayMainMenu
+exit
+
+
 eval set -- "${options}"
 while [ $# -gt 0 ]
 do
 	case "$1" in
 
 		-e)
-			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy eduroam software base" --defaultno --yesno --clear -- \
-                        "Run yum update to refresh machine to CAF eduroam base?\n\n Yes will proceed with yum silent update and then exit" ${whipSize} 3>&1 1>&2 2>&3
-                	continueFwipe=$?
-                	if [ "${continueFwipe}" -eq 0 ]
-                	then
-				eval ${redhatCmdEduroam}	
-				echo ""
-                	fi
+				doEduroamInstall
 				exit
 		;;
 		-w)
@@ -776,7 +832,7 @@ EOM
 	if [ "${GUIen}" = "y" ]
 	then
 		${whiptailBin} --backtitle "${GUIbacktitle}" --title "Confirm" --scrolltext --clear --textbox ${Spath}/files/confirm.tx 20 75 3>&1 1>&2 2>&3
-		${whiptailBin} --backtitle "${GUIbacktitle}" --title "Confirm" --clear --yesno --defaultno -- "Do you want to install this IDP with theese options?" ${whipSize} 3>&1 1>&2 2>&3
+		${whiptailBin} --backtitle "${GUIbacktitle}" --title "Confirm" --clear --yesno --defaultno -- "Do you want to install this IDP with these options?" ${whipSize} 3>&1 1>&2 2>&3
 		cRet=$?
 	else
 		cat ${Spath}/files/confirm.tx
