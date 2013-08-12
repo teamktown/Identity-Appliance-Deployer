@@ -1,5 +1,6 @@
-#!/bin/sh -x
+#!/bin/bash -x
 # UTF-8
+
 HELP="
 ##############################################################################
 #	Federated Identity Appliance Deployer 				     #
@@ -60,6 +61,8 @@ mdSignerFinger="12:60:D7:09:6A:D9:C1:43:AD:31:88:14:3C:A8:C4:B7:33:8A:4F:CB"
 
 # Set cleanUp to 0 (zero) for debugging of created files
 cleanUp=0
+
+
 # Default enable of whiptail UI
 GUIen=y
 GUIbacktitle="Federated Identity Appliance Deployer"
@@ -105,6 +108,16 @@ distCmd5=""
 fetchCmd="curl --silent -k --output"
 shibbURL="http://shibboleth.net/downloads/identity-provider/${shibVer}/shibboleth-identityprovider-${shibVer}-bin.zip"
 casClientURL="http://downloads.jasig.org/cas-clients/cas-client-3.2.1-release.zip"
+
+tmp1sstr="These are the installers settings it will run with:\n\n"
+
+# read config file
+if [ -f "${Spath}/config" ]
+then
+	. ${Spath}/config		# dynamically (or by hand) editted config file
+	. ${Spath}/config_descriptions	# descriptive terms for each element - uses associative array cfgDesc[varname]
+fi
+
 ##### FUNCTIONS #####
 # cleanup function
 cleanBadInstall() {
@@ -222,6 +235,50 @@ displayMainMenu() {
 
 
 }
+
+validateConfig() {
+	# criteria for config are non empty configuration elements for all uncommented rows 
+	#
+	# this parses all attributes in the configuration file to ensure they are not zero length
+	#
+	tmpBailIfHasAny=""
+
+	vc_attribute_list=`cat ${Spath}/config|egrep -v "^#"| awk -F= '{print $1}'|awk '/./'|tr '\n' ' '`
+	
+	# uses indirect reference for variable names. 
+	eval set -- "${vc_attribute_list}"
+	while [ $# -gt 0 ]
+	do
+		echo "DO======${tmpVal}===== ---- $1, \$$1, ${!1}"
+		if [ "XXXXXX" ==  "${!1}XXXXXX" ]
+        	then
+			#echo "##### $1 is ${!1}"
+			echo "########EMPTYEMPTY $1 is empty"
+			tmpBailIfHasAny="${tmpBailIfHasAny} $1 "
+		else
+			echo "ha"
+			tmpString=" `echo "${cfgDesc[$1]}"`";
+			tmpval=" `echo "${!1}"`";
+			settingsHumanReadable=" ${settingsHumanReadable}  ${tmpString}: ${!1}\n"
+		fi
+	
+		shift
+	done
+	#
+	# announce and exit when attributes are non zero
+	#
+		if [ "XXXXXX" ==  "${tmpBailIfHasAny}XXXXXX" ]
+		then
+			echo ""
+		else
+			echo "Config variables failed to validate from file: ${Spath}/config"
+			echo "***Please fix these variables as they were detected as zero length:${tmpBailIfHasAny}";
+			echo ""	
+			exit 1;
+		fi
+
+
+}
 #### END FUNCTIONS ####
 
 redhatCmdEduroam="yum -y install ntp samba samba-winbind freeradius freeradius-krb5 freeradius-ldap freeradius-perl freeradius-python freeradius-utils freeradius-mysql" 
@@ -234,6 +291,7 @@ fi
 # parse options
 options=$(getopt -o eckwh -l "help" -- "$@")
 
+validateConfig
 setInstallStatus
 displayMainMenu
 exit
@@ -358,11 +416,6 @@ then
 	exit
 fi
 
-# read config file
-if [ -f "${Spath}/config" ]
-then
-	. ${Spath}/config
-fi
 prep="prep/${type}"
 
 # check for installed IDP
