@@ -73,6 +73,8 @@ shibVer="2.4.0"
 # Default values
 upgrade=0
 Spath="$(cd "$(dirname "$0")" && pwd)"
+backupPath="${Spath}/backups/"
+backupList="${backupPath}/recoverypoints.txt"
 files=""
 ts=`date "+%s"`
 whiptailBin=`which whiptail`
@@ -237,6 +239,21 @@ displayMainMenu() {
 
 
 }
+createRestorePoint() {
+	# Creates a restore point. Note the tar command starts from / and uses . prefixed paths.
+	# this should permit easier, less error prone untar of the file on same machine if needed
+	
+	rpLabel="RestorePoint-`date +%F-%s`"
+	rpFile="${backupPath}/Identity-Appliance-${rpLabel}.tar"
+
+	# record our list of backups
+	echo "${rpLabel} ${rpFile}" >> ${backupList}
+	bkpCmd="(cd /;tar cfv ${rpFile} ./etc/krb5.conf ./etc/samba ./etc/raddb) >> ${statusFile} 2>&1"
+	
+	eval ${bkpCmd}
+
+}
+
 
 validateConfig() {
 	# criteria for config are non empty configuration elements for all uncommented rows 
@@ -296,6 +313,9 @@ then
 fi
 # parse options
 options=$(getopt -o eckwh -l "help" -- "$@")
+
+createRestorePoint
+exit
 
 validateConfig
 setInstallStatus

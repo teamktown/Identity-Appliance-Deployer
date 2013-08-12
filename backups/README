@@ -1,0 +1,25 @@
+About Restore Points
+====================
+
+This installer creates a basic restore point of the files it touches.
+Your milage may vary, as you may have made other edits to the files or files outside this list.
+
+recoverypoints.txt has is a two column file of 'label' and then full filename for the file.
+
+How to Return to a Previous Restore Point
+==========================================
+You have the choice of simply untar'ing the file in place and examining the differences or 
+wholesale recovery.
+
+Untaring the file in place does not overwrite the active files.
+To do deploy the restore point change do these steps (as root)
+
+cd /
+tar xfv /full/path/to/restore/file.tar
+
+***WARNING*** 
+This will overwrite the current configuration.
+Also note that it doesn't REMOVE any existing file, just overwrite. 
+This may have implications if you hand edited files and then do a restore.
+
+
