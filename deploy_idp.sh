@@ -117,6 +117,7 @@ then
 	. ${Spath}/config		# dynamically (or by hand) editted config file
 	. ${Spath}/config_descriptions	# descriptive terms for each element - uses associative array cfgDesc[varname]
 fi
+freeradiusfile="${Spath}/files/freeradius.tx"
 
 ##### FUNCTIONS #####
 # cleanup function
@@ -225,6 +226,7 @@ displayMainMenu() {
 
                 if [ "${GUIen}" = "y" ]
                 then
+ 			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Confirm Settings" --scrolltext --clear --textbox ${freeradiusfile} 20 75 3>&1 1>&2 2>&3
                         eduroam-task=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --menu --clear  -- "${getStatusString}\nWhich do you want to do?" ${whipSize} 2 \
                                 install "Install eduroam" uninstall "Remove eduroam" 3>&1 1>&2 2>&3)
                 else
@@ -259,7 +261,8 @@ validateConfig() {
 			echo "ha"
 			tmpString=" `echo "${cfgDesc[$1]}"`";
 			tmpval=" `echo "${!1}"`";
-			settingsHumanReadable=" ${settingsHumanReadable}  ${tmpString}: ${!1}\n"
+			#settingsHumanReadable=" ${settingsHumanReadable}  ${tmpString}:  ${!1}\n"
+			settingsHumanReadable="${settingsHumanReadable} ${cfgDesc[$1]}:  ${!1}\n"
 		fi
 	
 		shift
@@ -277,6 +280,9 @@ validateConfig() {
 			exit 1;
 		fi
 
+cat > ${freeradiusfile}<< EOM
+${settingsHumanReadable}
+EOM
 
 }
 #### END FUNCTIONS ####
