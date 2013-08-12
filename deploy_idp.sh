@@ -195,7 +195,7 @@ then
         msg_fsso_stat="Installed"
 	installStateFSSO=1
 else
-	msg_fsso_stat="Not Found"
+	msg_fsso_stat="Not Installed yet"
 	installStateFSSO=0
 fi
 
@@ -204,7 +204,7 @@ then
         msg_freeradius_stat="Installed"
 	installStateEduroam=1
 else
-        msg_freeradius_stat="Not Found"
+        msg_freeradius_stat="Not Installed yet"
 	installStateEduroam=0
 fi
 getStatusString="System state:\n${msg_FSSO} ${msg_fsso_stat}\n${msg_RADIUS} ${msg_freeradius_stat}"
@@ -223,20 +223,41 @@ doEduroamInstall() {
                 	fi
 
 }
+review(){
 
+ if [ "${GUIen}" = "y" ]
+                then
+                        ${whiptailBin} --backtitle "${GUIbacktitle}" --title "Review and Confirm Install Settings" --ok-button "Return to Main Menu" --scrolltext --clear --textbox ${freeradiusfile} 20 75 3>&1 1>&2 2>&3
+
+		displayMainMenu
+
+                else
+			echo "Please make sure whiptail is installed"
+                fi
+
+
+}
 displayMainMenu() {
 
                 if [ "${GUIen}" = "y" ]
                 then
- 			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Confirm Settings" --scrolltext --clear --textbox ${freeradiusfile} 20 75 3>&1 1>&2 2>&3
-                        eduroam-task=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --menu --clear  -- "${getStatusString}\nWhich do you want to do?" ${whipSize} 2 \
-                                install "Install eduroam" uninstall "Remove eduroam" 3>&1 1>&2 2>&3)
+ 		#	${whiptailBin} --backtitle "${GUIbacktitle}" --title "Review and Confirm Install Settings" --scrolltext --clear --defaultno --yesno --textbox ${freeradiusfile} 20 75 3>&1 1>&2 2>&3
+                  eduroamTask=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --menu --clear  -- "${getStatusString}\nWhich do you want to do?" ${whipSize} 2 review "install Settings" install "eduroam base server" 3>&1 1>&2 2>&3)
+
+
                 else
                         echo "eduroam tasks[ install| uninstall ]"
-                        read eduroam-task 
+                        read eduroamTask 
                         echo ""
                 fi
 
+		if [ "${eduroamTask}" = "review" ]
+		then
+			echo "review selected!"
+			review
+		else
+			exit
+		fi
 
 }
 createRestorePoint() {
@@ -314,12 +335,11 @@ fi
 # parse options
 options=$(getopt -o eckwh -l "help" -- "$@")
 
-createRestorePoint
-exit
 
 validateConfig
 setInstallStatus
 displayMainMenu
+createRestorePoint
 exit
 
 
