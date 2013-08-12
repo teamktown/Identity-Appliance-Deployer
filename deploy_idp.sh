@@ -1,4 +1,4 @@
-#!/bin/bash -x
+e!/bin/bash -x
 # UTF-8
 
 HELP="
@@ -211,16 +211,19 @@ getStatusString="System state:\n${msg_FSSO} ${msg_fsso_stat}\n${msg_RADIUS} ${ms
 
 }
 
-doEduroamInstall() {
+refresh() {
 			
-			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy eduroam software base" --defaultno --yesno --clear -- \
-                        "Run yum update to refresh machine to CAF eduroam base?\n\n Yes will proceed with yum silent update and then exit" ${whipSize} 3>&1 1>&2 2>&3
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy/Refresh relevant eduroam software base" --defaultno --yes-button "Yes, proceed" --no-button "No, back to main menu" --yesno --clear -- \
+                        "Create restore point and refresh machine to CAF eduroam base?" ${whipSize} 3>&1 1>&2 2>&3
                 	continueFwipe=$?
                 	if [ "${continueFwipe}" -eq 0 ]
                 	then
 				eval ${redhatCmdEduroam}	
 				echo ""
+				echo "Update Completed" >> ${statusFile} 2>&1 
                 	fi
+			
+			displayMainMenu
 
 }
 review(){
@@ -244,7 +247,7 @@ displayMainMenu() {
  		#	${whiptailBin} --backtitle "${GUIbacktitle}" --title "Review and Confirm Install Settings" --scrolltext --clear --defaultno --yesno --textbox ${freeradiusfile} 20 75 3>&1 1>&2 2>&3
                   #eduroamTask=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --cancel-button "exit, no changes" menu --clear  -- "${getStatusString}\nWhich do you want to do?" ${whipSize} 2 review "install Settings" refresh "relevant CentOS packages" install "full eduroam base server" 20 75 3>&1 1>&2 2>&3)
 
-                  eduroamTask=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --cancel-button "exit" --menu --clear  -- "Which do you want to do?" ${whipSize} 5 review "install Settings" refresh "relevant CentOS packages" install "full eduroam base server"  3>&1 1>&2 2>&3)
+                  eduroamTask=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --cancel-button "exit" --menu --clear  -- "Which do you want to do?" ${whipSize} 5 refresh "relevant CentOS packages" review "install Settings" install "full eduroam base server"  3>&1 1>&2 2>&3)
 
 
                 else
@@ -257,8 +260,25 @@ displayMainMenu() {
 		then
 			echo "review selected!"
 			review
-		else
-			exit
+		elif [ "${eduroamTask}" = "refresh" ]
+		then	
+
+                        echo "refresh chosen, creating Restore Point" >> ${statusFile} 2>&1
+			createRestorePoint
+			refresh
+
+		elif [ "${eduroamTask}" = "install" ]
+		then
+
+                        echo "install chosen, creating Restore Point" >> ${statusFile} 2>&1
+			createRestorePoint
+                        echo "Restore Point Completed" >> ${statusFile} 2>&1
+			eval ${redhatCmdEduroam}
+                                echo ""
+                                echo "Update Completed" >> ${statusFile} 2>&1
+
+			#install
+			
 		fi
 
 }
