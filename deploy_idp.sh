@@ -227,7 +227,7 @@ review(){
 
  if [ "${GUIen}" = "y" ]
                 then
-                        ${whiptailBin} --backtitle "${GUIbacktitle}" --title "Review and Confirm Install Settings" --ok-button "Return to Main Menu" --scrolltext --clear --textbox ${freeradiusfile} 20 75 3>&1 1>&2 2>&3
+                        ${whiptailBin} --backtitle "${GUIbacktitle}" --title "Review Install Settings" --ok-button "Return to Main Menu" --scrolltext --clear --textbox ${freeradiusfile} 20 75 3>&1 1>&2 2>&3
 
 		displayMainMenu
 
@@ -242,7 +242,9 @@ displayMainMenu() {
                 if [ "${GUIen}" = "y" ]
                 then
  		#	${whiptailBin} --backtitle "${GUIbacktitle}" --title "Review and Confirm Install Settings" --scrolltext --clear --defaultno --yesno --textbox ${freeradiusfile} 20 75 3>&1 1>&2 2>&3
-                  eduroamTask=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --menu --clear  -- "${getStatusString}\nWhich do you want to do?" ${whipSize} 2 review "install Settings" install "eduroam base server" 3>&1 1>&2 2>&3)
+                  #eduroamTask=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --cancel-button "exit, no changes" menu --clear  -- "${getStatusString}\nWhich do you want to do?" ${whipSize} 2 review "install Settings" refresh "relevant CentOS packages" install "full eduroam base server" 20 75 3>&1 1>&2 2>&3)
+
+                  eduroamTask=$(${whiptailBin} --backtitle "${GUIbacktitle}" --title "Identity Server Main Menu" --cancel-button "exit" --menu --clear  -- "Which do you want to do?" ${whipSize} 5 review "install Settings" refresh "relevant CentOS packages" install "full eduroam base server"  3>&1 1>&2 2>&3)
 
 
                 else
