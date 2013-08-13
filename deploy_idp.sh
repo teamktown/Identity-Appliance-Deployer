@@ -5,11 +5,11 @@ HELP="
 ##############################################################################
 #	Federated Identity Appliance Deployer 				     #
 #                                                                            #
-# This script deploys a complete SAML IdP infrastructure and		     #
-# in the case of CAF, an eduroam FreeRADIUS server			     #
-#                                                                            #
+# This script is intended to deploy both a SAML IdP and FreeRADIUS server    #
+# It is derived from the SWAMID version of the script, but this 	     #
+# build only supports the CAF version                                 	     #
 # Supported Federations:						     # 
-#		SWAMID  -  on Ubuntu (original script)	    	             #
+#		soon ->SWAMID  -  on Ubuntu (original script)	    	     #
 #		CAF - (Canadian Access Federation) on CentOS		     #
 #                                                                            #
 # You can pre-set configuration values in the file 'config'                  #
@@ -74,6 +74,7 @@ shibVer="2.4.0"
 upgrade=0
 Spath="$(cd "$(dirname "$0")" && pwd)"
 backupPath="${Spath}/backups/"
+templatePath="${Spath}/assets/"
 backupList="${backupPath}/recoverypoints.txt"
 files=""
 ts=`date "+%s"`
@@ -240,9 +241,91 @@ review(){
 
 
 }
+deployCustomizations() {
+	
+	# flat copy of files from deployer to OS
+	
+	cp ${Spath}/assets/etc/nsswitch.conf.template /etc/nsswitch.conf
+
+	cp ${Spath}/assets/etc/raddb/sites-available/default /etc/raddb/sites-available/default
+	cp ${Spath}/assets/etc/raddb/sites-available/eduroam /etc/raddb/sites-available/eduroam
+	cp ${Spath}/assets/etc/raddb/sites-available/eduroam-inner-tunnel /etc/raddb/sites-available/eduroam-inner-tunnel
+	cp ${Spath}/assets/etc/raddb/eap.conf.template /etc/raddb/eap.conf
+	cp ${Spath}/assets/etc/raddb/radius.conf.template /etc/raddb/radius.conf
+	
+	# perform symlink for freeRADIUS sites-available to sites-enabled
+	ln –s /etc/raddb/sites-available/eduroam-inner-tunnel /etc/raddb/sites-enabled/eduroam-inner-tunnel
+	ln –s /etc/raddb/sites-available/eduroam /etc/raddb/sites-enabled/eduroam
+
+	# do parsing of templates into the right spot
+	# in order as they appear in the variable list
+	
+# /etc/krb5.conf	
+	cat ${templatePath}/krb5.conf.template \
+	|perl -npe "s#kRb5_LiBdEf_DeFaUlT_ReAlM#${krb5_libdef_default_realm}#" \
+	|perl -npe "s#kRb5_DoMaIn_ReAlM#${krb5_domain_realm}#" \
+	|perl -npe "s#kRb5_rEaLmS_dEf_DoM#${krb5_realms_def_dom}#" \
+	> /etc/krb5.conf
+
+# /etc/raddb/modules
+	cat ${templatePath}/mschap.template \
+	|perl -npe "s#fReErAdIuS_rEaLm#${freeRADIUS_realm}#" \
+	 > /etc/raddb/modules/mschap
+
+# /etc/raddb/proxy.conf
+	cat ${templatePath}/proxy.conf.template \
+	|perl -npe "s#PXYCFG_rEaLm#${freeRADIUS_pxycfg_realm}#" \
+	> /etc/raddb/modules/proxy.conf
+
+# /etc/raddb/client.conf 
+	cat ${templatePath}/client.conf.template \
+	|perl -npe "s#PrOd_EduRoAm_PhRaSe#${freeRADIUS_cdn_prod_passphrase}#" \
+	|perl -npe "s#sCLCFG_YaP1_iP#${reeRADIUS_clcfg_ap1_ip}#" \
+	|perl -npe "s#CLCFG_YaP1_sEcReT#${freeRADIUS_clcfg_ap1_secret}#" \
+	|perl -npe "s#sCLCFG_YaP2_iP#${freeRADIUS_clcfg_ap2_ip}#" \
+	|perl -npe "s#CLCFG_YaP2_sEcReT#${freeRADIUS_clcfg_ap2_secret}#" \
+ 	> /etc/raddb/modules/client.conf
+
+# /etc/raddb/certs/ca.cnf (note that there are a few things in the template too like setting it to 10yrs validity )
+	cat ${templatePath}/certs/ca.cnf.template \
+	|perl -npe "s#CRT_Ca_StAtE#${freeRADIUS_ca_state}#" \
+	|perl -npe "s#CRT_Ca_LoCaL#${freeRADIUS_ca_local}#" \
+	|perl -npe "s#CRT_Ca_OrGnAmE#${freeRADIUS_ca_org_name}#" \
+	|perl -npe "s#CRT_Ca_EmAiL#${freeRADIUS_ca_org_email}#" \
+	|perl -npe "s#CRT_Ca_CoMmOnNaMe#${freeRADIUS_ca_commonName}#" \
+ 	> /etc/raddb/certs/ca.cnf
+	
+# /etc/raddb/certs/server.cnf (note that there are a few things in the template too like setting it to 10yrs validity )
+	cat ${templatePath}/certs/ca.cnf.template |perl -npe "s#CRT_Ca_StAtE#${freeRADIUS_ca_state}#" \
+	|perl -npe "s#CRT_Ca_LoCaL#${freeRADIUS_ca_local}#" \
+	|perl -npe "s#CRT_Ca_OrGnAmE#${freeRADIUS_ca_org_name}#" \
+	|perl -npe "s#CRT_Ca_EmAiL#${freeRADIUS_ca_org_email}#" \
+	|perl -npe "s#CRT_Ca_CoMmOnNaMe#${freeRADIUS_ca_commonName}#" \
+ 	> /etc/raddb/certs/server.cnf
+
+echo "Merging variables completed " >> ${statusFile} 2>&1 
+
+# ensure proper start/stop at run level 3 for the machine are in place for winbind,smb, and of course, radiusd
+	ckCmd="/sbin/chkconfig"
+	ckArgs="--level 3"
+	ckState="on" 
+	ckServices="winbind smb radiusd"
+
+	for myService in $ckServices
+	do
+		${ckCmd} ${ckArgs} ${myService} ${ckState}
+	done
+
+# tweak winbind to permit proper authentication traffic to proceed
+	chmod ug+rw /var/run/winbindd
+				
+echo "Merging variables completed " >> ${statusFile} 2>&1 
+
+}
 doInstall() {
 			
-			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy eduroam customizations" --defaultno --yes-button "Yes, proceed" --no-button "No, back to main menu" --yesno --clear -- \
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy eduroam customizations" --defaultno \ 
+			--yes-button "Yes, proceed" --no-button "No, back to main menu" --yesno --clear -- \
                         "Proceed with creating restore point and deploying Canadian Access Federation(CAF) eduroam settings?" ${whipSize} 3>&1 1>&2 2>&3
                 	continueFwipe=$?
                 	if [ "${continueFwipe}" -eq 0 ]
@@ -250,7 +333,11 @@ doInstall() {
 				eval ${redhatCmdEduroam}	
 				echo ""
 				echo "Update Completed" >> ${statusFile} 2>&1 
-				${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduroam customization completed" --msgbox "Congratulations! eduroam customizations are now deployed!\n\nPlease see post install instructions for the final steps.  Choose OK to return to main menu." ${whipSize} 
+				${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduroam customization completed" \ 
+				--msgbox "Congratulations! eduroam customizations are now deployed!\n\nPlease see post install instructions for the final steps.  Choose OK to return to main menu." ${whipSize} 
+
+				deployCustomizations
+
 			else
 
 				${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduroam customization aborted" --msgbox "eduroam customizations WERE NOT done. Choose OK to return to main menu" ${whipSize} 
