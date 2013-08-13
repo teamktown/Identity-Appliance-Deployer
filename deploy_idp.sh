@@ -74,7 +74,7 @@ shibVer="2.4.0"
 upgrade=0
 Spath="$(cd "$(dirname "$0")" && pwd)"
 backupPath="${Spath}/backups/"
-templatePath="${Spath}/assets/"
+templatePath="${Spath}/assets"
 backupList="${backupPath}/recoverypoints.txt"
 files=""
 ts=`date "+%s"`
@@ -245,13 +245,13 @@ deployCustomizations() {
 	
 	# flat copy of files from deployer to OS
 	
-	cp ${Spath}/assets/etc/nsswitch.conf.template /etc/nsswitch.conf
+	cp ${templatePath}/etc/nsswitch.conf.template /etc/nsswitch.conf
 
-	cp ${Spath}/assets/etc/raddb/sites-available/default /etc/raddb/sites-available/default
-	cp ${Spath}/assets/etc/raddb/sites-available/eduroam /etc/raddb/sites-available/eduroam
-	cp ${Spath}/assets/etc/raddb/sites-available/eduroam-inner-tunnel /etc/raddb/sites-available/eduroam-inner-tunnel
-	cp ${Spath}/assets/etc/raddb/eap.conf.template /etc/raddb/eap.conf
-	cp ${Spath}/assets/etc/raddb/radius.conf.template /etc/raddb/radius.conf
+	cp ${templatePath}/etc/raddb/sites-available/default /etc/raddb/sites-available/default
+	cp ${templatePath}/etc/raddb/sites-available/eduroam /etc/raddb/sites-available/eduroam
+	cp ${templatePath}/etc/raddb/sites-available/eduroam-inner-tunnel /etc/raddb/sites-available/eduroam-inner-tunnel
+	cp ${templatePath}/etc/raddb/eap.conf.template /etc/raddb/eap.conf
+	cp ${templatePath}/etc/raddb/radius.conf.template /etc/raddb/radius.conf
 	
 	# perform symlink for freeRADIUS sites-available to sites-enabled
 	ln –s /etc/raddb/sites-available/eduroam-inner-tunnel /etc/raddb/sites-enabled/eduroam-inner-tunnel
@@ -261,24 +261,37 @@ deployCustomizations() {
 	# in order as they appear in the variable list
 	
 # /etc/krb5.conf	
-	cat ${templatePath}/krb5.conf.template \
+	cat ${templatePath}/etc/krb5.conf.template \
 	|perl -npe "s#kRb5_LiBdEf_DeFaUlT_ReAlM#${krb5_libdef_default_realm}#" \
 	|perl -npe "s#kRb5_DoMaIn_ReAlM#${krb5_domain_realm}#" \
 	|perl -npe "s#kRb5_rEaLmS_dEf_DoM#${krb5_realms_def_dom}#" \
 	> /etc/krb5.conf
 
+# /etc/samba/smb.conf
+	cat ${templatePath}/etc/samba.conf.template \
+	|perl -npe "s#sMb_WoRkGrOuP#${smb_workgroup}#" \
+	|perl -npe "s#sMb_NeTbIoS_NaMe#${smb_netbios_name}#" \
+	|perl -npe "s#sMb_PaSsWd_SvR#${smb_passwd_svr}#" \
+	|perl -npe "s#sMb_ReAlM#${ismb_realm}#" \
+	> /etc/samba/smb.conf
+
 # /etc/raddb/modules
-	cat ${templatePath}/mschap.template \
+	cat ${templatePath}/etc/raddb/modules/mschap.template \
 	|perl -npe "s#fReErAdIuS_rEaLm#${freeRADIUS_realm}#" \
 	 > /etc/raddb/modules/mschap
 
+# /etc/raddb/radius.conf
+	cat ${templatePath}/etc/raddb/radius.conf.template \
+	|perl -npe "s#fReErAdIuS_rEaLm#${freeRADIUS_realm}#" \
+	> /etc/raddb/radius.conf
+
 # /etc/raddb/proxy.conf
-	cat ${templatePath}/proxy.conf.template \
+	cat ${templatePath}/etc/raddb/proxy.conf.template \
 	|perl -npe "s#PXYCFG_rEaLm#${freeRADIUS_pxycfg_realm}#" \
 	> /etc/raddb/modules/proxy.conf
 
-# /etc/raddb/client.conf 
-	cat ${templatePath}/client.conf.template \
+# /etc/raddb/clients.conf 
+	cat ${templatePath}/etc/raddb/clients.conf.template \
 	|perl -npe "s#PrOd_EduRoAm_PhRaSe#${freeRADIUS_cdn_prod_passphrase}#" \
 	|perl -npe "s#sCLCFG_YaP1_iP#${reeRADIUS_clcfg_ap1_ip}#" \
 	|perl -npe "s#CLCFG_YaP1_sEcReT#${freeRADIUS_clcfg_ap1_secret}#" \
@@ -287,7 +300,7 @@ deployCustomizations() {
  	> /etc/raddb/modules/client.conf
 
 # /etc/raddb/certs/ca.cnf (note that there are a few things in the template too like setting it to 10yrs validity )
-	cat ${templatePath}/certs/ca.cnf.template \
+	cat ${templatePath}/etc/raddb/certs/ca.cnf.template \
 	|perl -npe "s#CRT_Ca_StAtE#${freeRADIUS_ca_state}#" \
 	|perl -npe "s#CRT_Ca_LoCaL#${freeRADIUS_ca_local}#" \
 	|perl -npe "s#CRT_Ca_OrGnAmE#${freeRADIUS_ca_org_name}#" \
@@ -296,7 +309,7 @@ deployCustomizations() {
  	> /etc/raddb/certs/ca.cnf
 	
 # /etc/raddb/certs/server.cnf (note that there are a few things in the template too like setting it to 10yrs validity )
-	cat ${templatePath}/certs/ca.cnf.template |perl -npe "s#CRT_Ca_StAtE#${freeRADIUS_ca_state}#" \
+	cat ${templatePath}/etc/raddb/certs/ca.cnf.template |perl -npe "s#CRT_Ca_StAtE#${freeRADIUS_ca_state}#" \
 	|perl -npe "s#CRT_Ca_LoCaL#${freeRADIUS_ca_local}#" \
 	|perl -npe "s#CRT_Ca_OrGnAmE#${freeRADIUS_ca_org_name}#" \
 	|perl -npe "s#CRT_Ca_EmAiL#${freeRADIUS_ca_org_email}#" \
@@ -324,19 +337,20 @@ echo "Merging variables completed " >> ${statusFile} 2>&1
 }
 doInstall() {
 			
-			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy eduroam customizations" --defaultno \ 
-			--yes-button "Yes, proceed" --no-button "No, back to main menu" --yesno --clear -- \
-                        "Proceed with creating restore point and deploying Canadian Access Federation(CAF) eduroam settings?" ${whipSize} 3>&1 1>&2 2>&3
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy eduroam customizations" --defaultno --yes-button "Yes, proceed" --no-button "No, back to main menu" --yesno --clear -- "Proceed with creating restore point and deploying Canadian Access Federation(CAF) eduroam settings?" ${whipSize} 3>&1 1>&2 2>&3
                 	continueFwipe=$?
                 	if [ "${continueFwipe}" -eq 0 ]
                 	then
 				eval ${redhatCmdEduroam}	
 				echo ""
 				echo "Update Completed" >> ${statusFile} 2>&1 
-				${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduroam customization completed" \ 
-				--msgbox "Congratulations! eduroam customizations are now deployed!\n\nPlease see post install instructions for the final steps.  Choose OK to return to main menu." ${whipSize} 
+                        	echo "Beginning overlay , creating Restore Point" >> ${statusFile} 2>&1
 
+				createRestorePoint
 				deployCustomizations
+
+				${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduroam customization completed"  --msgbox "Congratulations! eduroam customizations are now deployed!\n\nPlease see post install instructions for the final steps.  Choose OK to return to main menu." ${whipSize} 
+
 
 			else
 
