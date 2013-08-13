@@ -5,21 +5,27 @@ HELP="
 ##############################################################################
 #	Federated Identity Appliance Deployer 				     #
 #                                                                            #
-# This script is intended to deploy both a SAML IdP and FreeRADIUS server    #
-# It is derived from the SWAMID version of the script, but this 	     #
-# build only supports the CAF version                                 	     #
+# This script is intended to deploy an eduroam ready FreeRADIUS server.      #
+# It is derived from the SWAMID approach but only supports CAF eduroam 	     #
+# at this time. 							     #
+#                                                                            #
 # Supported Federations:						     # 
-#		soon ->SWAMID  -  on Ubuntu (original script)	    	     #
 #		CAF - (Canadian Access Federation) on CentOS		     #
 #                                                                            #
-# You can pre-set configuration values in the file 'config'                  #
-# usage: deploy_idp.sh [-c|-k|-w|-e]                                         #
-# 	To disable the whiptail gui run with argument '-c'                   # 
-# 	To keep generated files run with argument '-k'                       #
-# 	To wipe out the entire install (NO BACKUP, run with arguement -w     #
-# 	To install eduroam base install run with arguement '-e'              #
-#    NOTE! some of these files WILL contain cleartext passwords.             #
+# This script requires a configuration file or it will not run properly.     #
+# Please see ./www/index.html for the interactive configuration builder      #
+# By using this method we avoid storage of any sensitive passwords.          #
 #                                                                            #
+#	Steps to use the script:					     #
+#		Create a configuration via: ~/www/index.html		     #
+#		Save the config in thid directory			     # 
+#		Run the script: ./deploy_idp.sh [-h shows this message]      #
+#		Join this machine to your domain: net join -U Administrator  #
+#		Decide on your commercial TLS Certificate		     #
+#		Send your request to tickets@canarie.ca to join eduroam	     #	
+##############################################################################
+"
+
 ##############################################################################
 # Deployment Profiles:  SWAMID, CAF                                          #
 #                                                                            #
@@ -56,7 +62,7 @@ HELP="
 # You can pre-set configuration values in the file 'config'                  #
 #                                                                            #
 ##############################################################################
-"
+
 mdSignerFinger="12:60:D7:09:6A:D9:C1:43:AD:31:88:14:3C:A8:C4:B7:33:8A:4F:CB"
 
 # Set cleanUp to 0 (zero) for debugging of created files
@@ -79,7 +85,7 @@ backupList="${backupPath}/recoverypoints.txt"
 files=""
 ts=`date "+%s"`
 whiptailBin=`which whiptail`
-whipSize="13 75"
+whipSize="16 75"
 certpath="/opt/shibboleth-idp/ssl/"
 httpsP12="/opt/shibboleth-idp/credentials/https.p12"
 certREQ="${certpath}tomcat.req"
@@ -277,7 +283,7 @@ deployCustomizations() {
 	|perl -npe "s#sMb_WoRkGrOuP#${smb_workgroup}#" \
 	|perl -npe "s#sMb_NeTbIoS_NaMe#${smb_netbios_name}#" \
 	|perl -npe "s#sMb_PaSsWd_SvR#${smb_passwd_svr}#" \
-	|perl -npe "s#sMb_ReAlM#${ismb_realm}#" \
+	|perl -npe "s#sMb_ReAlM#${smb_realm}#" \
 	> /etc/samba/smb.conf
 
 # /etc/raddb/modules
@@ -301,7 +307,7 @@ deployCustomizations() {
 # /etc/raddb/clients.conf 
 	cat ${templatePath}/etc/raddb/clients.conf.template \
 	|perl -npe "s#PrOd_EduRoAm_PhRaSe#${freeRADIUS_cdn_prod_passphrase}#" \
-	|perl -npe "s#CLCFG_YaP1_iP#${reeRADIUS_clcfg_ap1_ip}#" \
+	|perl -npe "s#CLCFG_YaP1_iP#${freeRADIUS_clcfg_ap1_ip}#" \
 	|perl -npe "s#CLCFG_YaP1_sEcReT#${freeRADIUS_clcfg_ap1_secret}#" \
 	|perl -npe "s#CLCFG_YaP2_iP#${freeRADIUS_clcfg_ap2_ip}#" \
 	|perl -npe "s#CLCFG_YaP2_sEcReT#${freeRADIUS_clcfg_ap2_secret}#" \
@@ -313,20 +319,42 @@ deployCustomizations() {
 	|perl -npe "s#CRT_Ca_StAtE#${freeRADIUS_ca_state}#" \
 	|perl -npe "s#CRT_Ca_LoCaL#${freeRADIUS_ca_local}#" \
 	|perl -npe "s#CRT_Ca_OrGnAmE#${freeRADIUS_ca_org_name}#" \
-	|perl -npe "s#CRT_Ca_EmAiL#${freeRADIUS_ca_org_email}#" \
+	|perl -npe "s#CRT_Ca_EmAiL#${freeRADIUS_ca_email}#" \
 	|perl -npe "s#CRT_Ca_CoMmOnNaMe#${freeRADIUS_ca_commonName}#" \
  	> /etc/raddb/certs/ca.cnf
 	
 # /etc/raddb/certs/server.cnf (note that there are a few things in the template too like setting it to 10yrs validity )
 	cat ${templatePath}/etc/raddb/certs/server.cnf.template \
-	|perl -npe "s#CRT_Ca_StAtE#${freeRADIUS_svr_state}#" \
+	|perl -npe "s#CRT_SvR_StAtE#${freeRADIUS_svr_state}#" \
 	|perl -npe "s#CRT_SvR_LoCaL#${freeRADIUS_svr_local}#" \
 	|perl -npe "s#CRT_SvR_OrGnAmE#${freeRADIUS_svr_org_name}#" \
-	|perl -npe "s#CRT_SvR_EmAiL#${freeRADIUS_svr_org_email}#" \
+	|perl -npe "s#CRT_SvR_EmAiL#${freeRADIUS_svr_email}#" \
 	|perl -npe "s#CRT_SvR_CoMmOnNaMe#${freeRADIUS_svr_commonName}#" \
  	> /etc/raddb/certs/server.cnf
 
+# /etc/raddb/certs/client.cnf (note that there are a few things in the template too like setting it to 10yrs validity )
+	cat ${templatePath}/etc/raddb/certs/client.cnf.template \
+	|perl -npe "s#CRT_SvR_StAtE#${freeRADIUS_svr_state}#" \
+	|perl -npe "s#CRT_SvR_LoCaL#${freeRADIUS_svr_local}#" \
+	|perl -npe "s#CRT_SvR_OrGnAmE#${freeRADIUS_svr_org_name}#" \
+	|perl -npe "s#CRT_SvR_EmAiL#${freeRADIUS_svr_email}#" \
+	|perl -npe "s#CRT_SvR_CoMmOnNaMe#${freeRADIUS_svr_commonName}#" \
+ 	> /etc/raddb/certs/client.cnf
+
 	echo "Merging variables completed " >> ${statusFile} 2>&1 
+
+# construct default certificates including a CSR for this host in case a commercial CA is used
+
+#	WARNING, see the /etc/raddb/README to 'clean' out certificate bits when you run
+#		this script respect the protections freeRADIUS put in place to not overwrite certs
+
+	if [ ! -e "/etc/raddb/certs/server/crt" ] 
+	then
+		echo "bootstrap already run, skipping"
+	else
+	
+		(cd /etc/raddb/certs; ./bootstrap )
+	fi
 
 # ensure proper start/stop at run level 3 for the machine are in place for winbind,smb, and of course, radiusd
 	ckCmd="/sbin/chkconfig"
@@ -342,8 +370,9 @@ deployCustomizations() {
 # tweak winbind to permit proper authentication traffic to proceed
 	chmod ug+rw /var/run/winbindd
 				
-echo "Merging variables completed " >> ${statusFile} 2>&1 
+echo "Start Up processes completed" >> ${statusFile} 2>&1 
 
+	
 }
 doInstall() {
 			
@@ -359,7 +388,7 @@ doInstall() {
 				createRestorePoint
 				deployCustomizations
 
-				${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduroam customization completed"  --msgbox "Congratulations! eduroam customizations are now deployed!\n\nJoin this machine to the AD domain by typing \'net join -U Administrator\' and then reboot. Please see the documentation for additional configuration adjustments.\n\n Choose OK to return to main menu." ${whipSize} 
+				${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduroam customization completed"  --msgbox "Congratulations! eduroam customizations are now deployed!\n\nNext steps: Join this machine to the AD domain by typing \n\nnet join -U Administrator\n\n After, reboot the machine and it should be ready to answer requests. \n\nDecide on your commercial certificate: Self Signed certificates were generated by default. A CSR is located at /etc/raddb/certs/server.csr to request a commercial one. Remember the RADIUS extensions needed though!\n\nFor further configuration details, please see the documentation on disk or the web \n\n Choose OK to return to main menu." 22 75
 
 
 			else
@@ -479,7 +508,7 @@ EOM
 }
 #### END FUNCTIONS ####
 
-redhatCmdEduroam="yum -y install ntp samba samba-winbind freeradius freeradius-krb5 freeradius-ldap freeradius-perl freeradius-python freeradius-utils freeradius-mysql" 
+redhatCmdEduroam="yum -y install ntp samba samba-winbind freeradius freeradius-krb5 freeradius-ldap freeradius-perl freeradius-python freeradius-utils freeradius-mysql make" 
 
 #### END FETCHING COMMANDS ####
 if [ ! -x "${whiptailBin}" ]
@@ -487,14 +516,9 @@ then
 	GUIen="n"
 fi
 # parse options
-options=$(getopt -o eckwh -l "help" -- "$@")
+options=$(getopt -o ckwh -l "help" -- "$@")
 
 
-validateConfig
-setInstallStatus
-displayMainMenu
-createRestorePoint
-exit
 
 
 eval set -- "${options}"
@@ -502,10 +526,6 @@ while [ $# -gt 0 ]
 do
 	case "$1" in
 
-		-e)
-				doEduroamInstall
-				exit
-		;;
 		-w)
 			${whiptailBin} --backtitle "${GUIbacktitle}" --title "CLEAN OUT INSTALLATION" --defaultno --yesno --clear -- \
                         "Wipe entire install from machine, with no backup?\n\n Both options exit immediately, yes will proceed with wipe" ${whipSize} 3>&1 1>&2 2>&3
@@ -529,6 +549,15 @@ do
 		;;
 	esac
 	shift
+
+
+validateConfig
+setInstallStatus
+displayMainMenu
+createRestorePoint
+exit
+
+
 done
 # guess linux dist
 lsbBin=`which lsb_release`
