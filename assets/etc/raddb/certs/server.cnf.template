@@ -46,9 +46,9 @@ output_password		= whatever
 
 [server]
 countryName		= CA
-stateOrProvinceName     = CRT_SvR_StAtE
-localityName            = CRT_SvR_LoCaL
-organizationName        = CRT_SvR_OrGnAmE
-emailAddress            = CRT_SvR_EmAiL
-commonName              = CRT_SvR_CoMmOnNaMe
+stateOrProvinceName     = "CRT_SvR_StAtE"
+localityName            = "CRT_SvR_LoCaL"
+organizationName        = "CRT_SvR_OrGnAmE"
+emailAddress            = "CRT_SvR_EmAiL"
+commonName              = "CRT_SvR_CoMmOnNaMe"
 
