@@ -1,4 +1,4 @@
-e!/bin/bash -x
+#!/bin/bash -x
 # UTF-8
 
 HELP="
@@ -240,6 +240,27 @@ review(){
 
 
 }
+doInstall() {
+			
+			${whiptailBin} --backtitle "${GUIbacktitle}" --title "Deploy eduroam customizations" --defaultno --yes-button "Yes, proceed" --no-button "No, back to main menu" --yesno --clear -- \
+                        "Proceed with creating restore point and deploying Canadian Access Federation(CAF) eduroam settings?" ${whipSize} 3>&1 1>&2 2>&3
+                	continueFwipe=$?
+                	if [ "${continueFwipe}" -eq 0 ]
+                	then
+				eval ${redhatCmdEduroam}	
+				echo ""
+				echo "Update Completed" >> ${statusFile} 2>&1 
+				${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduroam customization completed" --msgbox "Congratulations! eduroam customizations are now deployed!\n\nPlease see post install instructions for the final steps.  Choose OK to return to main menu." ${whipSize} 
+			else
+
+				${whiptailBin} --backtitle "${GUIbacktitle}" --title "eduroam customization aborted" --msgbox "eduroam customizations WERE NOT done. Choose OK to return to main menu" ${whipSize} 
+
+                	fi
+			
+			displayMainMenu
+
+}
+
 displayMainMenu() {
 
                 if [ "${GUIen}" = "y" ]
@@ -277,7 +298,7 @@ displayMainMenu() {
                                 echo ""
                                 echo "Update Completed" >> ${statusFile} 2>&1
 
-			#install
+			doInstall
 			
 		fi
 
