@@ -18,7 +18,7 @@ HELP="
 #                                                                            #
 #	Steps to use the script:					     #
 #		Create a configuration via: ~/www/index.html		     #
-#		Save the config in thid directory			     # 
+#		Save the config in this directory			     # 
 #		Run the script: ./deploy_idp.sh [-h shows this message]      #
 #		Join this machine to your domain: net join -U Administrator  #
 #		Decide on your commercial TLS Certificate		     #
