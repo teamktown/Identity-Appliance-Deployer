@@ -1,0 +1,314 @@
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link type="text/css" rel="stylesheet" href="css/bootstrap.css">
+<link type="text/css" rel="stylesheet" href="css/bootstrap-responsive.css">
+<script>
+
+function duplicateContactInfo()
+{
+if ($("#dupeData1").is(':checked')) {
+    // duplicate information to fields below
+
+    $("#freeRADIUS_svr_state").val($("#freeRADIUS_ca_state").val());    
+    $("#freeRADIUS_svr_local").val($("#freeRADIUS_ca_local").val());    
+    $("#freeRADIUS_svr_org_name").val($("#freeRADIUS_ca_org_name").val());    
+    $("#freeRADIUS_svr_email").val($("#freeRADIUS_ca_email").val());    
+    }
+    update(); // update to ensure the configuration is constructed properly.
+
+
+}
+
+var PoundSignError="Sorry, the # is a reserved character due\nto the template parser.\nPlease remove or choose another special character.";
+
+function update()
+{
+    var numFields=24;
+    var progressIncrement=1/numFields*100;
+    var progress=0;
+    var output = "";
+
+    // taking some exclusive variables on this page and plugging them in
+    // set the eduroam domain
+    if($("#my_eduroamDomain").val()==undefined )
+        {
+
+        }else{ 
+            $("#freeRADIUS_realm").val($("#my_eduroamDomain").val());    
+            $("#freeRADIUS_pxycfg_realm").val($("#my_eduroamDomain").val());  
+
+
+        };
+
+
+   output += "installer_section1_title=\"Active Directory\"\n"; 
+output += "krb5_libdef_default_realm=\""+ $("#krb5_libdef_default_realm").val()+ "\"\n";
+output += "krb5_realms_def_dom=\""+ $("#krb5_realms_def_dom").val()+ "\"\n";
+output += "krb5_domain_realm=\""+ $("#krb5_domain_realm").val()+ "\"\n";
+output += "smb_workgroup=\""+ $("#smb_workgroup").val()+ "\"\n";
+output += "smb_netbios_name=\""+ $("#smb_netbios_name").val()+ "\"\n";
+output += "smb_passwd_svr=\""+ $("#smb_passwd_svr").val()+ "\"\n";
+output += "smb_realm=\""+ $("#smb_realm").val()+ "\"\n";
+output += "\n";
+output += "installer_section2_title=\"FreeRADIUS\"\n";
+output += "freeRADIUS_realm=\""+ $("#freeRADIUS_realm").val()+ "\"\n";
+output += "freeRADIUS_cdn_prod_passphrase=\""+ $("#freeRADIUS_cdn_prod_passphrase").val()+ "\"\n";
+output += "\n";
+output += "freeRADIUS_clcfg_ap1_ip=\""+ $("#freeRADIUS_clcfg_ap1_ip").val()+ "\"\n";
+output += "freeRADIUS_clcfg_ap1_secret=\""+ $("#freeRADIUS_clcfg_ap1_secret").val()+ "\"\n";
+output += "freeRADIUS_clcfg_ap2_ip=\""+ $("#freeRADIUS_clcfg_ap2_ip").val()+ "\"\n";
+output += "freeRADIUS_clcfg_ap2_secret=\""+ $("#freeRADIUS_clcfg_ap2_secret").val()+ "\"\n";
+output += "\n";
+output += "freeRADIUS_pxycfg_realm=\""+ $("#freeRADIUS_pxycfg_realm").val()+ "\"\n";
+output += "\n";
+output += "installer_section3_title=\"\"FreeRADIUS TLS Certificate Authority settings\"\n";
+output += "freeRADIUS_ca_state=\""+ $("#freeRADIUS_ca_state").val()+ "\"\n";
+output += "freeRADIUS_ca_local=\""+ $("#freeRADIUS_ca_local").val()+ "\"\n";
+output += "freeRADIUS_ca_org_name=\""+ $("#freeRADIUS_ca_org_name").val()+ "\"\n";
+output += "freeRADIUS_ca_email=\""+ $("#freeRADIUS_ca_email").val()+ "\"\n";
+output += "freeRADIUS_ca_commonName=\""+ $("#freeRADIUS_ca_commonName").val()+ "\"\n";
+output += "\n";
+output += "installer_section4_title=\"FreeRADIUS TLS Server certificate settings\"\n";
+output += "freeRADIUS_svr_state=\""+ $("#freeRADIUS_svr_state").val()+ "\"\n";
+output += "freeRADIUS_svr_local=\""+ $("#freeRADIUS_svr_local").val()+ "\"\n";
+output += "freeRADIUS_svr_org_name=\""+ $("#freeRADIUS_svr_org_name").val()+ "\"\n";
+output += "freeRADIUS_svr_email=\""+ $("#freeRADIUS_svr_email").val()+ "\"\n";
+output += "freeRADIUS_svr_commonName=\""+ $("#freeRADIUS_svr_commonName").val()+ "\"\n";
+
+
+//if($("#installer_section1_title").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#krb5_libdef_default_realm").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#krb5_realms_def_dom").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#krb5_domain_realm").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#smb_workgroup").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#smb_netbios_name").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#smb_passwd_svr").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#smb_realm").val()==undefined ){}else{ progress+=progressIncrement;};
+//if($("#installer_section2_title").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_realm").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_cdn_prod_passphrase").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_clcfg_ap1_ip").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_clcfg_ap1_secret").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_clcfg_ap2_ip").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_clcfg_ap2_secret").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_pxycfg_realm").val()==undefined ){}else{ progress+=progressIncrement;};
+//if($("#installer_section3_title").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_ca_state").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_ca_local").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_ca_org_name").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_ca_email").val()==undefined ){}else{ progress+=progressIncrement;};
+//if($("#freeRADIUS_ca_commonName").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#installer_section4_title").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_svr_state").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_svr_local").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_svr_org_name").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_svr_email").val()==undefined ){}else{ progress+=progressIncrement;};
+if($("#freeRADIUS_svr_commonName").val()==undefined ){}else{ progress+=progressIncrement;};
+
+    
+    $("#outputArea").text(output);
+    
+    // updates the  test tag $("p#test").text($("#krb5_libdef_default_realm").val());
+    
+    $(".bar").attr("style", "width: " + progress+ "%;" );
+    //$(".bar").attr("style", "width: " + ( Math.random() * 80 ) + "%;" );
+    return true;
+}
+
+function formSubmit() {
+    update();
+    return false;
+}
+</script>
+</head>
+<body onload="update();">
+
+     <div class="container" style="margin-top: 5px;">
+            <div class="row">
+                <div class="span12">
+                    <div class="hero-unit">
+                        <div class="container">
+                            <div class="row">
+                                <div class="span10">
+
+      <table width=100%>
+    <tr><td><font size="+3"><b>Identity Appliance Interactive Configuration Builder</b></font></td>
+        <td align=right><img align="center" width="250" src="./img/CANARIE_h_250px.png" alt="CANARIE logo" /></td></tr></table>
+<br>
+
+                                 
+                                        <h3>Introduction</h3>
+                                       <p id="intro">Welcome! This interactive page will help you collect and tailor the required configuration file for the CAF installer. We will start with a few high level questions which will result in specific fields being populated with your answers. Then, it's as simple as cutting and pasting the result into a replacement file for the stock blank config that comes with the distribution<br>
+                                        <a href="#more_info">More Detail</a> (goes to bottom of this page)
+                                       </p>
+
+
+                                       
+                                       <h2>Let's Begin!</h2>
+                                        <p id="begin">
+                                        
+                                        Once you complete these questions you should have a configuration file ready to substitute for the stock one that comes with the installer. You can hand edit the config file afterwards without this page<br>
+
+                                    <form>
+                                        <h4>
+                                        <fieldset>
+                                            <table width="100%" border=1>
+                                        
+   <tr bgcolor="#CCCCCC"><td colspan="2"><b><font size="+1">Your eduroam Domain</font><b></td></tr>
+                                            <tr><td colspan="1">
+                                            An eduroam 'userid' looks like this: USERID @ SOMEDOMAIN.CA.  <br>What occurs after the '@' will be used as the realm setting in the configuration files and what your end users should use for fully qualified ID.
+                                       
+                                          </td><td>
+                                            <input id="my_eduroamDomain" type="text" placeholder="" onchange="update()"></td></tr>
+                                          
+<tr bgcolor="#CCCCCC"><td colspan="2"><b><font size="+1">Your Active Directory settings</font><b></td></tr>
+                                            <tr><td colspan="1">
+                                            To authenticate users on your behalf, this machine needs to join your AD domain.<br>
+                                            The machine will recognize the AD server as a Kerberos server and also be considered a host that can authenticate users with the MSCHAPv2 protocol.
+
+                                          </td><td></tr>
+                                           <tr>
+<td colspan="2" align="right">
+Kerberos Library Default Realm:<input id="krb5_libdef_default_realm" type="text" placeholder="DOMAIN.LOCAL" onchange="update()"><br>
+Kerberos Default Realm:<input id="krb5_realms_def_dom" type="domain.local" placeholder="e.g. domain.local" onchange="update()"><br>
+Kerberos Domain realm:<input id="krb5_domain_realm" type="domain.ca" placeholder="e.g. domain.ca" onchange="update()"><br>
+SAMBA workgroup(realm shortname:)<input id="smb_workgroup" type="text" placeholder="e.g. DOMAIN" onchange="update()"><br>
+This machine name in Active Directory:<input id="smb_netbios_name" type="text" placeholder="e.g. APP1" onchange="update()"><br>
+IP Address of your Primary AD DC:<input id="smb_passwd_svr" type="text" placeholder="e.g. 1.2.3.4" onchange="update()"><br>
+SAMBA authentication realm<input id="smb_realm" type="text" placeholder="e.g. domain.ca" onchange="update()"><br>
+
+</td></tr>
+
+<tr bgcolor="#CCCCCC"><td colspan="2"><b><font size="+1">Your RADIUS configuration</font><b></td></tr>
+                                            <tr><td colspan="1">
+                                            This FreeRADIUS install will behave as both a proxy and server to accept clients to connect.<br>
+                                            A Client can be anything that talks the RADIUS protocol, including other RADIUS servers, access points, laptops, and/or smart phones.<br>
+                                            You will be provided a shared secret and can enter it here.<br>
+                                            It is expected that two other 'clients' will be added and is what the templates are expecting.<br>
+
+                                           
+                                          </td><td></tr>
+                                           <tr>
+<td colspan="2" align="right">
+
+eduroam domain people see my users from:<input id="freeRADIUS_realm" type="text" placeholder="" onchange="update()"><br>
+Locally, the realm I will accept:<input id="freeRADIUS_pxycfg_realm" type="text" placeholder="" onchange="update()"><br>
+Your Passphrase to your upstream eduroam servers:<input id="freeRADIUS_cdn_prod_passphrase" type="text" placeholder="" 
+onchange="if(this.value.indexOf('#')>-1){alert(PoundSignError);}else{update();}"><br>
+Access Point #1 IP Address:<input id="freeRADIUS_clcfg_ap1_ip" type="text" placeholder="" onchange="update()"><br>
+Access Point #1 Passphrase(min 8 char):<input id="freeRADIUS_clcfg_ap1_secret" type="text" placeholder="" 
+onchange="if(this.value.indexOf('#')>-1){alert(PoundSignError);}else{update();}"><br>
+Access Point #2 IP Address:<input id="freeRADIUS_clcfg_ap2_ip" type="text" placeholder="" onchange="update()"><br>
+Access Point #1 Passphrase(min 8 char):<input id="freeRADIUS_clcfg_ap2_secret" type="text" placeholder="" 
+onchange="if(this.value.indexOf('#')>-1){alert(PoundSignError);}else{update();}"><br>
+
+<!-- <tr><td>installer_section3_title:</td><td><input id="installer_section3_title" type="text" placeholder="" onchange="update()"></td></tr>
+-->
+
+</td></tr>
+
+
+
+   <tr bgcolor="#CCCCCC"><td colspan="2"><b><font size="+1">Information for the TLS Generation</font><b></td></tr>
+                                            <tr><td colspan="1">
+                                            FreeRADIUS will automatically generate a self signed Certificate Authority(CA) and create a complete TLS based test environment.  To do so, we need to collect a few details about your location and organization name.<br> 
+                                            Since this is a self-signed environment, we will share the information between them.
+                                       
+                                           
+                                          </td><td></tr>
+                                           <tr>
+<td colspan="2" align="right">
+Certificate Authority Prov/State:<input id="freeRADIUS_ca_state" type="text" placeholder="" onchange="update()"><BR>
+Certificate Authority City:<input id="freeRADIUS_ca_local" type="text" placeholder="" onchange="update()"><BR>
+Certificate Authority Org Name:<input id="freeRADIUS_ca_org_name" type="text" placeholder="Institution X" onchange="update()"><BR>
+Certificate Authority Contact email:<input id="freeRADIUS_ca_email" type="text" placeholder="" onchange="update()"><BR>
+Certificate Authority Common Name:<input id="freeRADIUS_ca_commonName" type="text" placeholder="Inst. X SelfSigned CA Authority" 
+onchange="if(this.value.indexOf('#')>-1){alert(PoundSignError);}else{update();}"><br>
+<!-- installer_section4_title:<input id="installer_section4_title" type="text" placeholder="" onchange="update()"><BR> -->
+ Copy info to fields below? 
+    <input id="dupeData1" onclick="return duplicateContactInfo();" type="checkbox" name="dupeData1" value="yes" />
+                                            <br><br>
+Server Certificate Prov/State:<input id="freeRADIUS_svr_state" type="text" placeholder="" onchange="update()"><BR>
+Server Certificate City:<input id="freeRADIUS_svr_local" type="text" placeholder="" onchange="update()"><BR>
+Server Certificate Org Name:<input id="freeRADIUS_svr_org_name" type="text" placeholder="" onchange="update()"><BR>
+Server Certificate Contact email:<input id="freeRADIUS_svr_email" type="text" placeholder="" onchange="update()"><BR>
+Server Certificate Common Name:<input id="freeRADIUS_svr_commonName" type="text" placeholder="idp.domain.ca" onchange="update()"><BR>
+
+</td></tr>
+
+
+<!-- <tr><td>installer_section2_title:</td><td><input id="installer_section2_title" type="text" placeholder="" onchange="update()"></td></tr>
+
+-->
+
+
+
+                                        </table>
+                                            
+
+                                        </fieldset>
+                                        <br>
+
+
+                                        <button type="submit" class="btn" onclick="return formSubmit();" >
+                                                Generate Configuration File
+                                            </button>
+                                    </form>
+                                </div>
+                                <div class="span6">
+<!--
+                                    <form>
+                                        <label>
+                                            <h4>Output</h4>
+                                        </label>
+                                        <textarea id="outputArea" class="span5" rows="8"></textarea>
+                                    </form>
+                                 <p id="test">Content</p>
+    -->                            </div>
+                            </div>
+                        </div>
+                        <script type="text/javascript" src="js/jquery-1.10.0.js"></script>
+                        <script type="text/javascript" src="js/bootstrap.js"></script>
+                    
+               
+           
+       
+<form>
+                                        <label>
+                                            <h4>Autogenerated Configuration File</h4>
+                                        </label>
+             <!--                           <p>All fields are needed. Your Progress so far:</p> 
+                                        <div class="progress">
+                                                
+                                                <div id="pg" class="bar" style="width: 60%;"></div>
+                                                
+                                            </div>
+                 -->
+                                       <textarea id="outputArea" class="span10"  rows="49" cols="50"></textarea>
+                                     </form>
+                                    <!-- <p id="test">Content</p> -->
+<a name="more_info"></a>
+<h2>Additional Notes</h2>
+
+<h3>Intended Audience</h3>
+                                        It is recommended that the person collecting the information and using this tool has working knowledge of:<br>
+                                        <ul><li>Operating wireless networks and related infrastructure
+                                        <li>An understanding of Microsoft Active Directory and is familiar with their local  installation of it
+                                        <li>how to prepare a basic CentOS 'minimal install' image to use the installer on. 
+                                        </ul>
+
+                                       <h3>How Much Time Should I Plan For?</h3>
+                                        <p id="planning_time">The actual installation and execution of the installer is a few minutes. That said, the preparation time of collecting and planning around some of the answers for the configuration may take longer. Note that the configuration can only be generated at this time and not reverse engineered from an existing configuration file. 
+                                       <h3>What Do I get When I'm done?</h3>
+                                        <p id="when_done">The installer will install FreeRADIUS and SAMBA to connect to Active Directory to do authentication. It will use self signed certificates and is sufficient to use as a testbed and be easily operated on it's own. <br>
+                                            Deploying a production instance is simply re-using the same configuration file as needed and choosing your commercial server certificate.  The install process does generate a CSR(Certificate Signing Request) that could be used.
+                                       <h3>What about Passwords and Shared Secrets etc?</h3>
+                                        <p id="what_about">This web page does not need to be run on a server and is entirely self contained. When you use it, you CAN use it from a webserver but also within a local browser. It generates a local copy of the configuration file which you then place on the appropriate server and location</p>
+
+</div>
+ </div>
+ </div>
+        </div>
+    </body>
+</html>
