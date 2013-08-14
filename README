@@ -1,53 +1,48 @@
 Disclamer
 -------------------------------------------------------------------------------
 
-Intended to be used on a clean install of Ubuntu Server 12.04 (or newer).
-Upgrade mode is only to be used on a previous deployment of this script.
+Intended to be used on a clean CentOS 6.4 'minimal' install or newer. 
+
 
 
 Introduction
 -------------------------------------------------------------------------------
 
-This script will install a IDP for use in SWAMID.
-Uses Tomcat6 or Jboss 6.1 final
+Inspired by the scripting work by SWAMID for installing an IDP, this is a variation
+that will do an installation for eduroam.
+The IDP pieces still reside in the script and will eventually be worked back 
+into the build.
 
-Dependencies will be installed with "apt" or will be fetched from the web.
+From ./deploy_idp.sh -h:
 
-Can use LDAP or CAS for authentication
-Depends on an LDAP repository for attribute store
-
-Attribute release based on the following LDAP schemas:
-posixAccount
-inetOrgPerson
-eduPerson
-norEduPerson
-
-If your attributes is stored in diffrent LDAP attributes, modify the file:
-/opt/shibboleth-idp/conf/attribute-resolver.xml
-(Change: "sourceAttributeID")
-For Swedish civic registration numbers see:
-https://portal.nordu.net/display/SWAMI/norEduPersonNIN+och+Svenska+Personnummer
-
-Anonymous usage reporting to SWAMID is optional.
-
+##############################################################################
+#	Federated Identity Appliance Deployer 				     #
+#                                                                            #
+# This script is intended to deploy an eduroam ready FreeRADIUS server.      #
+# It is derived from the SWAMID approach but only supports CAF eduroam 	     #
+# at this time. 							     #
+#                                                                            #
+# Supported Federations:						     # 
+#		CAF - (Canadian Access Federation) on CentOS		     #
+#                                                                            #
+# This script requires a configuration file or it will not run properly.     #
+# Please see ./www/index.html for the interactive configuration builder      #
+# By using this method we avoid storage of any sensitive passwords.          #
+#                                                                            #
+#	Steps to use the script:					     #
+#		Create a configuration via: ~/www/index.html		     #
+#		Save the config in thid directory			     # 
+#		Run the script: ./deploy_idp.sh [-h shows this message]      #
+#		Join this machine to your domain: net join -U Administrator  #
+#		Decide on your commercial TLS Certificate		     #
+#		Send your request to tickets@canarie.ca to join eduroam	     #	
+##############################################################################
 
 Upgrading
 -------------------------------------------------------------------------------
+This iteration of the script has no upgrading functionality.
+That said, it could be run multiple times with different configurations if so desired. 
+The tool does a 'Restore Point' (aka a tar file of key files) in the 
+./backup directory.
 
-Upgrading will only upgrade shibboleth.
-You cannot change authentication method.
-If you use LDAP authentication you will have to redo the login page
-customization after an upgrade.
-
-
-Configuration
--------------------------------------------------------------------------------
-
-Configuration values can be predefined in the file "config", otherwise
-questions will be asked.
-
-Attribute release is configured for the following consumers:
-testshib.org
-antagning.se/studera.nu
-And the recommended initial attribute filter policy for swamid.se
 

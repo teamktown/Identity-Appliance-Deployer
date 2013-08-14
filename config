@@ -1,49 +1,45 @@
 #
 #
 # variable					# substitution string in template
-installer_section1_title="Active Directory"
-krb5_libdef_default_realm="CANARIE.LOCAL" 			# kRb5_LiBdEf_DeFaUlT_ReAlM  DOMAIN.LOCAL
-krb5_realms_def_dom="canarie.local" 			#kRb5_rEaLmS_dEf_DoM	domain.local
-krb5_domain_realm="canarie.ca"				#kRb5_DoMaIn_ReAlM	domain.ca
-smb_workgroup="CANARIE"			#sMb_WoRkGrOuP		DOMAIN
-smb_netbios_name="APP1"			#sMb_NeTbIoS_NaMe	APP1
-smb_passwd_svr="192.168.1.14"			#sMb_PaSsWd_SvR		IP of AD domain controller
-smb_realm="${krb5_libdef_default_realm}" 	#sMb_ReAlM		realm
+krb5_libdef_default_realm="" 			# kRb5_LiBdEf_DeFaUlT_ReAlM  DOMAIN.LOCAL
+krb5_realms_def_dom="" 			#kRb5_rEaLmS_dEf_DoM	domain.local
+krb5_domain_realm=""				#kRb5_DoMaIn_ReAlM	domain.ca
+smb_workgroup=""			#sMb_WoRkGrOuP		DOMAIN
+smb_netbios_name=""			#sMb_NeTbIoS_NaMe	APP1
+smb_passwd_svr=""			#sMb_PaSsWd_SvR		IP of AD domain controller
+smb_realm="" 	#sMb_ReAlM		realm
 #
 #
 # RADIUS config variables & relevant file
 #
 # raddb/radius.conf   	- overall config 
-installer_section2_title="FreeRADIUS"
-freeRADIUS_realm="canarie.ca"	#fReErAdIuS_rEaLm
+freeRADIUS_realm="${krb5_libdef_default_realm}"	#fReErAdIuS_rEaLm
 
 # raddb/client.conf   	- clients that can talk to this radius server
 
-freeRADIUS_cdn_prod_passphrase="KqETPP8dSOOSMGrVPLOiJJ3z" 		# PrOd_EduRoAm_PhRaSe #used in clients.conf, proxy.conf
-freeRADIUS_clcfg_ap1_ip="192.168.1.50"			# CLCFG_YaP1_iP 	1.2.3.4
-freeRADIUS_clcfg_ap1_secret="secret##12345"			# CLCFG_YaP1_sEcReT
-freeRADIUS_clcfg_ap2_ip="205.189.33.75"			# CLCFG_YaP2_iP 	4.3.2.1 null route in your ip space if not needed
-freeRADIUS_clcfg_ap2_secret="amidala59"			# CLCFG_YaP2_sEcReT
+freeRADIUS_cdn_prod_passphrase="" 		# PrOd_EduRoAm_PhRaSe #used in clients.conf, proxy.conf
+freeRADIUS_clcfg_ap1_ip=""			# CLCFG_YaP1_iP 	1.2.3.4
+freeRADIUS_clcfg_ap1_secret=""			# CLCFG_YaP1_sEcReT
+freeRADIUS_clcfg_ap2_ip=""			# CLCFG_YaP2_iP 	4.3.2.1 null route in your ip space if not needed
+freeRADIUS_clcfg_ap2_secret=""			# CLCFG_YaP2_sEcReT
 
 # raddb/proxy.conf 	- Federation Level Radius (FLR) radius servers we talk to
 
 freeRADIUS_pxycfg_realm="${krb5_domain_realm}"  # PXYCFG_rEaLm   #the proxying domain
 
-installer_section3_title="FreeRADIUS TLS Certificate Authority settings"
 # raddb/certs/ca.cnf	- Self Signed Certificate Authority settings for bootstrap process
 
 # note that the templates have 10 year validity for the CA and the server certificate
-freeRADIUS_ca_State="Ontario"				# CRT_Ca_StAtE  # Ontario 
-freeRADIUS_ca_local="Ottawa"				# CRT_Ca_LoCaL  # Ottawa
-freeRADIUS_ca_org_name="CANARIE Inc."			# CRT_Ca_OrGnAmE # Domain Inc.
-freeRADIUS_ca_email="chris.phillips@canarie.ca"				# CRT_Ca_EmAiL   # itsupport@domain.ca
-freeRADIUS_ca_commonName="CANARIE SelfSigned CA Authority"			# CRT_Ca_CoMmOnNaMe # "SelfSigned domain.ca CA Authority"
+freeRADIUS_ca_State=""				# CRT_Ca_StAtE  # Ontario 
+freeRADIUS_ca_local=""				# CRT_Ca_LoCaL  # Ottawa
+freeRADIUS_ca_org_name=""			# CRT_Ca_OrGnAmE # Domain Inc.
+freeRADIUS_ca_email=""				# CRT_Ca_EmAiL   # itsupport@domain.ca
+freeRADIUS_ca_commonName=""			# CRT_Ca_CoMmOnNaMe # "SelfSigned domain.ca CA Authority"
 
 # raddb/certs/server.cnf	- Server Certificate settings for bootstrap process
 
-installer_section4_title="FreeRADIUS TLS Server certificate settings"
-freeRADIUS_svr_State="Ontario"				# CRT_SvR_StAtE  # Ontario 
-freeRADIUS_svr_local="Ottawa"				# CRT_SvR_LoCaL  # Ottawa
-freeRADIUS_svr_org_name="CANARIE Inc."			# CRT_SvR_OrGnAmE # Domain Inc.
-freeRADIUS_svr_email="chris.phillips@canarie.ca"				# CRT_SvR_EmAiL   # itsupport@domain.ca
-freeRADIUS_svr_commonName="cloudidp1.canarie.ca"			# CRT_SvR_CoMmOnNaMe # testidp.domain.ca
+freeRADIUS_svr_State=""				# CRT_SvR_StAtE  # Ontario 
+freeRADIUS_svr_local=""				# CRT_SvR_LoCaL  # Ottawa
+freeRADIUS_svr_org_name=""			# CRT_SvR_OrGnAmE # Domain Inc.
+freeRADIUS_svr_email=""				# CRT_SvR_EmAiL   # itsupport@domain.ca
+freeRADIUS_svr_commonName=""			# CRT_SvR_CoMmOnNaMe # testidp.domain.ca

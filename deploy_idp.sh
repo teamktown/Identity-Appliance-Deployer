@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash 
 # UTF-8
 
 HELP="
@@ -311,7 +311,7 @@ deployCustomizations() {
 	|perl -npe "s#CLCFG_YaP1_sEcReT#${freeRADIUS_clcfg_ap1_secret}#" \
 	|perl -npe "s#CLCFG_YaP2_iP#${freeRADIUS_clcfg_ap2_ip}#" \
 	|perl -npe "s#CLCFG_YaP2_sEcReT#${freeRADIUS_clcfg_ap2_secret}#" \
- 	> /etc/raddb/client.conf
+ 	> /etc/raddb/clients.conf
 	chgrp radiusd /etc/raddb/clients.conf
 
 # /etc/raddb/certs/ca.cnf (note that there are a few things in the template too like setting it to 10yrs validity )
@@ -367,8 +367,13 @@ deployCustomizations() {
 		${ckCmd} ${ckArgs} ${myService} ${ckState}
 	done
 
+# disable SELinux as it interferes with the winbind process.
+
+cp ${templatePath}/etc/sysconfig/selinux.template /etc/sysconfig/selinux 
+
 # tweak winbind to permit proper authentication traffic to proceed
-	chmod ug+rw /var/run/winbindd
+# without this, the NTLM call out for freeRADIUS will not be able to process requests
+	chmod ugo+rx /var/run/winbindd
 				
 echo "Start Up processes completed" >> ${statusFile} 2>&1 
 
@@ -508,7 +513,7 @@ EOM
 }
 #### END FUNCTIONS ####
 
-redhatCmdEduroam="yum -y install ntp samba samba-winbind freeradius freeradius-krb5 freeradius-ldap freeradius-perl freeradius-python freeradius-utils freeradius-mysql make" 
+redhatCmdEduroam="yum -y install bind-utils ntp samba samba-winbind freeradius freeradius-krb5 freeradius-ldap freeradius-perl freeradius-python freeradius-utils freeradius-mysql make" 
 
 #### END FETCHING COMMANDS ####
 if [ ! -x "${whiptailBin}" ]
