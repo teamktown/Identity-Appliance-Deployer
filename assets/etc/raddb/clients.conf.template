@@ -98,7 +98,7 @@ client localhost {
 	#  The default secret below is only for testing, and should
 	#  not be used in any real environment.
 	#
-#	secret		= testing123
+	secret		= testing123
 
 	#
 	#  Old-style clients do not send a Message-Authenticator
@@ -197,7 +197,7 @@ client your-access-point-1 {
 }
 
 client your-access-point-2 {
-    ipaddr         = CLCFG_iYaP2_iP
+    ipaddr         = CLCFG_YaP2_iP
     netmask        = 32
     secret         = CLCFG_YaP2_sEcReT 
     shortname      = local-AP2

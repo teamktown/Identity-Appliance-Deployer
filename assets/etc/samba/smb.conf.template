@@ -234,7 +234,7 @@ encrypt passwords = yes
 #
 # You can choose a non default printing system using the Printing option
 	
-;	load printers = yes
+;	load printers = no
 ;	cups options = raw
 
 ;	printcap name = /etc/printcap
@@ -264,7 +264,7 @@ encrypt passwords = yes
 [homes]
 ;	comment = Home Directories
 ;	browseable = no
-;	writable = yes
+;	writable = no
 ;	valid users = %S
 ;	valid users = MYDOMAIN\%S
 	

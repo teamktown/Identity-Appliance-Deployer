@@ -1,5 +1,8 @@
 Changelog
 
+2.1	Forked from SWAMID specifically for eduroam deployment
+	IDP deployment commented out at this time.
+
 2.0	Changed shibboleth version from 2.3.8 to 2.4.0
 	Added entity-categories to default filter config
 	Changed mysql-connector-java version from 5.1.18 to 5.1.24
