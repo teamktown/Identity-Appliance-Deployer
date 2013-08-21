@@ -50,9 +50,9 @@ bootparams: nisplus [NOTFOUND=return] files
 ethers:     files
 netmasks:   files
 networks:   files
-protocols:  files
+protocols:  files winbind
 rpc:        files
-services:   files
+services:   files winbind
 
 netgroup:   files
 
